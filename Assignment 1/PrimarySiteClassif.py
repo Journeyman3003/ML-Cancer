@@ -379,15 +379,19 @@ def visualizeForestResults(importances, std, indices, featurePoolSize, saveSuffi
     for f in range(featurePoolSize):
         print("%d. feature %d (%f)" % (f + 1, indices[f], importances[indices[f]]))
 
+    width = featurePoolSize/5 if featurePoolSize >1 else featurePoolSize
     # Plot the feature importances of the forest
-    plt.figure()
+    plt.figure(figsize=(width+1,8))
     plt.title("Feature importances")
-    plt.bar(range(featurePoolSize), importances[indices], color="r",  yerr=std[indices], align="center")
-    plt.xticks(range(featurePoolSize), indices)
+    # plt.bar(range(featurePoolSize), importances[indices], color="r",  yerr=std[indices], align="center")
+    plt.bar(range(featurePoolSize), importances[indices], color="r", yerr=std[indices], align="center")
+    plt.xticks(range(featurePoolSize), range(featurePoolSize), rotation='vertical')
+    plt.yticks(rotation='vertical')
     plt.xlim([-1, featurePoolSize])
-
+    #plt.tight_layout()
     plt.savefig('foo' + saveSuffix + '.pdf')
-    plt.show()
+    #plt.show()
+    plt.close()
 
 
 def reduce_features(X, forest, nFeatures, mutCountLabel, geneFeatureLabels, chrMutFeaturelabels):
@@ -404,19 +408,19 @@ def reduce_features(X, forest, nFeatures, mutCountLabel, geneFeatureLabels, chrM
     # beware!!!: static structure, works only the first time of reduction, second time will be wrong!
     for i, index in enumerate(indices[0:nFeatures]):
         if (index == 0):
-            print("index is mutcount")
-            print("index:", index)
-            print("number of Feature:", i)
+            # print("index is mutcount")
+            # print("index:", index)
+            # print("number of Feature:", i)
             newMutCountFeature.append((i, getTupleValueOutOfList(mutCountLabel, index)))
         elif (index >= 1) & (index <= len(geneFeatureLabels)):
-            print("index is genefeature")
-            print("index:", index)
-            print("number of Feature:", i)
+            # print("index is genefeature")
+            # print("index:", index)
+            # print("number of Feature:", i)
             newGeneFeatures.append((i, getTupleValueOutOfList(geneFeatureLabels, index)))
         else:
-            print("index is chrMutCrossover")
-            print("index:", index)
-            print("number of Feature:", i)
+            # print("index is chrMutCrossover")
+            # print("index:", index)
+            # print("number of Feature:", i)
             newChrMutFeatures.append((i, getTupleValueOutOfList(chrMutFeaturelabels, index)))
         newX[:, i] = X[:, index]
 
@@ -468,12 +472,13 @@ def RandomForestClassiffromCSV(df, label_col):
     plt.title("Feature importances")
     plt.bar(range(X.shape[1]), importances[indices], color="r", yerr=std[indices], align="center")
     plt.xticks(range(X.shape[1]), indices)
+
     plt.xlim([-1, X.shape[1]])
     plt.show()
 
 
-def kFoldCrossValidation(X, y):
-    kFold = KFold(n_splits=10)
+def kFoldCrossValidation(X, y, k):
+    kFold = KFold(n_splits=k)
 
     confidenceList = []
     importancesList = []
@@ -501,6 +506,8 @@ def kFoldCrossValidation(X, y):
     print('confidence level of prediction is:', confidence)
 
     return confidence, importancesList, stdList, indicesList
+
+
 if __name__ == "__main__":
 
     # optional: create compressed json to test functionality
@@ -528,7 +535,7 @@ if __name__ == "__main__":
     print('confidence level of prediction is:')
     print(confidence)
 
-    #visualizeForestResults(importances, std, indices, X.shape[1], '')
+    visualizeForestResults(importances, std, indices, X.shape[1], '')
 
     confidences = []
 
@@ -538,24 +545,24 @@ if __name__ == "__main__":
     for i in intrange:
         X_new, mutCount_new, genes_new, chrMut_new = reduce_features(X, forest, i, mutCount, genes, chrMut)
 
-        print("\nNew run with %d features:" %i)
+        print("\nNew run with %d features:" % i)
         print(mutCount_new)
         print(genes_new)
         print(chrMut_new)
 
         # k-fold cross validation, k = 10
 
-        confidence, importancesList, stdList, indicesList = kFoldCrossValidation(X_new, y)
+        confidence, importancesList, stdList, indicesList = kFoldCrossValidation(X_new, y, 2)
 
         confidences.append(confidence)
         # visualize (and save to pdf) results of feature importance
-       # visualizeForestResults(importancesList, stdList, indicesList, X_new.shape[1], str(i))
+        visualizeForestResults(importancesList, stdList, indicesList, X_new.shape[1], str(i))
     [print("confidence level of run %d: %f" % (i+1, val)) for i, val in enumerate(confidences)]
 
     # Plot the confidences with different features
     plt.figure()
     plt.title("Confidences achieved with different # features")
-    plt.plot(list(map(str, intrange)), confidences, 'g^')
+    plt.plot(list(map(str, intrange)), confidences, '--g^')
 
     plt.savefig('confidence.pdf')
     plt.show()

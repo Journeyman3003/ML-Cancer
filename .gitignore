@@ -3,3 +3,6 @@
 
 #csv files
 *.csv
+
+#pdf files
+*.pdf

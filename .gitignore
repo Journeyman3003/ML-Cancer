@@ -1,0 +1,13 @@
+# json files
+*.json
+
+#csv files
+*.csv
+
+#pdf files
+*.pdf
+!prediction-primary-sites.pdf
+
+#png files
+*.png
+

@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import KFold
 import matplotlib.pyplot as plt
 
-from sklearn.metrics import accuracy_score, roc_auc_score, f1_score
+from sklearn.metrics import accuracy_score, f1_score
 from sklearn.metrics import roc_curve, auc
 
 from sklearn.feature_selection import SelectKBest, chi2, f_regression
@@ -23,6 +23,7 @@ import pickle as pkl
 from itertools import cycle
 from collections import Counter
 
+# ADJUST/set to blank
 filepath = 'MLiC-Lab2'
 
 def summarizeDF(df):
@@ -75,7 +76,7 @@ def filterAndJoinDataframes(ic50Frame, cellLineFrame, ic50FilterColumn, ic50Filt
 
 def RandomForestRegr(X, y):
     # 500 trees, all cores
-    forestRegr = RandomForestRegressor(n_estimators=500, n_jobs=-1)
+    forestRegr = RandomForestRegressor(n_estimators=500, criterion="mse", n_jobs=-1)
     forestRegr.fit(X, y)
 
     return forestRegr
@@ -87,6 +88,7 @@ def RandomForestClassif(X, y):
     forestClassif.fit(X, y)
 
     return forestClassif
+
 
 def prepareFeatureAndLabelArrays(dataFrame, nFeatures=-1, classification=True):
 
@@ -114,7 +116,7 @@ def selectBestFeatures(X, y, nFeatures, classification=True):
     if classification:
         X_new = SelectKBest(chi2, k=nFeatures).fit_transform(X, y)
     else:
-        X_new = SelectKBest(f_regression(), k=nFeatures).fit_transform(X, y)
+        X_new = SelectKBest(f_regression(X=X,y=y), k=nFeatures).fit_transform(X, y)
     return X_new
 
 
@@ -247,9 +249,9 @@ def evaluatePerformance(y_test, y_predict):
     print('f1: ', f1)
 
     # AUC Score
-    computeMacroAuc(y_test, y_predict)
+    computeMulticlassAuc(y_test, y_predict)
 
-def computeMacroAuc(y_test, y_predict):
+def computeMulticlassAuc(y_test, y_predict):
     # Binarize the output
     print('Counter for test data (actual labels): ', Counter(list(y_test)))
     print('Counter for predicted data (predicted labels): ', Counter(list(y_predict)))
@@ -348,7 +350,13 @@ if __name__ == '__main__':
     #ic50, cellLine = createDrugResponseDataframes('v17_fitted_dose_response.csv',
                                                  # 'Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv')
 
-    # add loop here over all drug ids...
+    # REGRESSION
+    # drugResponseDict = createDrugResponseDict(ic50=ic50, cellLine=cellLine,
+    #                                           filterField='DRUG_ID', nFeatures=3, classification=False)
+    # save to file
+    # writePythonObjectToFile(drugResponseDict, 'Drug_Regr_Predictions')
+
+
     # CLASSIFICATION
     #drugResponseDict = createDrugResponseDict(ic50=ic50, cellLine=cellLine,
                                               #filterField='DRUG_ID', nFeatures=3, classification=True)
@@ -357,7 +365,7 @@ if __name__ == '__main__':
 
     data = loadPythonObjectFromFile('Drug_Classif_Predictions')
 
-    evaluatePerformance(data[1]['test'], data[1]['predict'])
+    evaluatePerformance(data[100]['test'], data[100]['predict'])
 
     #joined = filterAndJoinDataframes(ic50, cellLine, 'DRUG_ID', 1)
 

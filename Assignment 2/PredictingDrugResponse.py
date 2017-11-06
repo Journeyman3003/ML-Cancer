@@ -1,12 +1,14 @@
 import pandas as pd
 import os
 import logging
+from collections import Counter
 
 import numpy as np
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.model_selection import train_test_split, KFold
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 
 # classification metrics
 from sklearn.metrics import accuracy_score, f1_score
@@ -16,7 +18,7 @@ from sklearn.metrics import roc_curve, auc
 from sklearn.metrics import r2_score, mean_squared_error
 
 
-from sklearn.feature_selection import SelectKBest, chi2, f_regression
+from sklearn.feature_selection import SelectKBest, chi2, f_regression, mutual_info_regression
 
 from sklearn.preprocessing import label_binarize
 
@@ -105,6 +107,26 @@ def createCopyNumberVariationDataframe(copyFile):
     cnvData = cnvData.rename_axis(None, axis=1)
     return cnvData
 
+def createWESDataFrame(wesFile):
+    wesFilePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), filepath, wesFile)
+    # skip that unnecessary first row in csv
+    wesData = pd.read_csv(wesFilePath, sep=',', header=0)
+
+    # just extract cDNA info
+    wesData = wesData[['COSMIC_ID','cDNA']]
+
+    wesData['cDNA'] = wesData['cDNA'].apply(lambda x: str(x)[-3:])
+    wesData = wesData.groupby('COSMIC_ID')['cDNA'].apply(list).reset_index()
+
+
+    distinctMutations = ['A>C','A>G','A>T','C>A','C>G','C>T','G>A','G>C','G>T','T>A','T>C','T>G']
+
+    for mutation in distinctMutations:
+        wesData[mutation] = wesData['cDNA'].apply(lambda x: x.count(mutation))
+
+    wesData.drop('cDNA', axis=1, inplace=True)
+    return wesData
+
 
 def addCopyNumberData(drug_id, drugTargets, cnvFrame, featureFrame):
 
@@ -128,6 +150,9 @@ def addCopyNumberData(drug_id, drugTargets, cnvFrame, featureFrame):
     print(featureFrame.shape)
     return featureFrame
 
+
+def addMutationCounter(wesFrame, featureFrame):
+    return pd.merge(featureFrame, wesFrame, how='inner', on='COSMIC_ID')
 
 def transformCNVFrame(cnvFrame, gene):
 
@@ -183,7 +208,7 @@ def RandomForestClassif(X, y):
     return forestClassif
 
 
-def prepareFeatureAndLabelArrays(dataFrame, nFeatures=-1, classification=True):
+def prepareFeatureAndLabelArrays(dataFrame, nFeatures=-1, classification=True, z_value=2):
 
     #drop unnecessary columns
     dataFrame.drop(['COSMIC_ID', 'DRUG_ID', 'MAX_CONC_MICROMOLAR', 'AUC', 'RMSE'], axis=1, inplace=True)
@@ -194,7 +219,7 @@ def prepareFeatureAndLabelArrays(dataFrame, nFeatures=-1, classification=True):
     X = np.array(dataFrame.drop('LN_IC50', axis=1))
     y = np.array(dataFrame['LN_IC50'])
     if classification:
-        y = np.array(convertLabelToClassificationProblem(y))
+        y = np.array(convertLabelToClassificationProblem(y, z_value=z_value))
     if nFeatures > 0:
         X = selectBestFeatures(X, y, nFeatures, classification)
 
@@ -213,18 +238,19 @@ def selectBestFeatures(X, y, nFeatures, classification=True):
     return X_new
 
 
-def convertLabelToClassificationProblem(y):
+def convertLabelToClassificationProblem(y, z_value):
     z_scores_y = pd.DataFrame(stats.zscore(y))
     # print('z_scores:\n', z_scores_y)
-    labelArray = z_scores_y[0].apply(lambda x: determineSensitivityLabel(x))
+    labelArray = z_scores_y[0].apply(lambda x: determineSensitivityLabel(x, z_value))
     # print('corresponding labels:\n', labelArray)
 
     return labelArray
 
-def determineSensitivityLabel(z_score):
-    if z_score >= 2:
+
+def determineSensitivityLabel(z_score, z_value):
+    if z_score >= z_value:
         return "Resistant"
-    elif z_score <= -2:
+    elif z_score <= -z_value:
         return "Sensitive"
     else:
         return "Intermediate"
@@ -345,15 +371,19 @@ def computeMulticlassAuc(y_test, y_predict, classlabels):
     plt.show()
 
 
-def createDrugResponseDict(ic50, cellLine, filterField, nFeatures=-1, classification=True, addInfo=False):
+def createDrugResponseDict(ic50, cellLine, filterField, nFeatures=-1, classification=True, z_value=2, smotetomek=False,
+                           addInfo=False):
 
     drugResponseDict = {}
     drugTargets = None
     cnvData = None
+    wesData = None
     if addInfo:
         drugTargets = createDrugTargetDataframe('Drug_targets.csv')
-        print('loading copy number data (may take some time)...')
+        print('loading copy number data and WES data (may take some time)...')
         cnvData = createCopyNumberVariationDataframe('Gene_level_CN.csv')
+
+        wesData = createWESDataFrame('WES_variants.csv')
 
     for i, drug in enumerate(ic50[filterField].unique()):
         print(' #####################################\n',
@@ -367,11 +397,42 @@ def createDrugResponseDict(ic50, cellLine, filterField, nFeatures=-1, classifica
             # and
             # GDSC-Drugs-with-SMILES-Aliases.csv
             joined = addCopyNumberData(drug, drugTargets, cnvData, joined)
-        X, y = prepareFeatureAndLabelArrays(joined, nFeatures, classification)
+
+            joined = addMutationCounter(wesData, joined)
+
+        X, y = prepareFeatureAndLabelArrays(joined, nFeatures, classification, z_value=z_value)
+
+        # apply smoteTomek if desired for classification problem
+        if smotetomek and z_value >= 1 and classification:
+            print('somting bitches')
+            X, y = smoteTomek(X,y)
 
         # 5 fold cross validation
         y_test, y_predict = kFoldCrossValidation(X, y, 5, classification)
         drugResponseDict[drug] = {'test': y_test, 'predict': y_predict}
+
+
+    return drugResponseDict
+
+
+def loadAndRun(ic50Filename, cellLineFilename, filterField, nFeatures=-1, filterAUC=0.0, classification=True, z_value=2, smotetomek=False, addInfo=False, save=True):
+    ic50, cellLine = createDrugResponseDataframes(ic50Filename, cellLineFilename, filterAUC=filterAUC)
+    drugResponseDict = createDrugResponseDict(ic50=ic50, cellLine=cellLine,
+                                              filterField=filterField, nFeatures=nFeatures,
+                                              classification=classification, z_value=z_value, smotetomek=smotetomek,
+                                              addInfo=addInfo)
+
+    # write to file if desired
+    if save:
+        method = 'Classif' if classification else 'Regr'
+        n = str(nFeatures) if nFeatures > 0 else ''
+        add = '_ADDINFO' if addInfo else ''
+        z = '_z' + str(z_value) if classification else ''
+        aucThreshold = '_' + str(int(filterAUC * 100))
+        st = '_SMOTETOMEK' if smotetomek else ''
+
+        writePythonObjectToFile(drugResponseDict, 'Drug_'+method+'_Predictions'+ n + aucThreshold + st + z + add)
+
     return drugResponseDict
 
 
@@ -401,29 +462,83 @@ if __name__ == '__main__':
     #                                              filterAUC=0.80)
     #
     # REGRESSION
+
+    #drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                              cellLineFilename= 'Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                              filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=False,
+    #                              addInfo=True, save=True)
+
     #drugResponseDict = createDrugResponseDict(ic50=ic50, cellLine=cellLine,
     #                                          filterField='DRUG_ID', nFeatures=30, classification=False, addInfo=True)
     # save to file
     #writePythonObjectToFile(drugResponseDict, 'Drug_Regr_Predictions30_80_ADDINFO')
     #
-    data1 = loadPythonObjectFromFile('Drug_Regr_Predictions30_80')
-    data2 = loadPythonObjectFromFile('Drug_Regr_Predictions30_80_ADDINFO')
+    #data1 = loadPythonObjectFromFile('Drug_Regr_Predictions30_80')
+    #data2 = loadPythonObjectFromFile('Drug_Regr_Predictions30_80_ADDINFO')
     #
-    for key in data1:
-        print("Drug",key,":",r2_score(data1[key]['test'],data1[key]['predict']))
-        print("Drug", key, " addinfo:", r2_score(data2[key]['test'], data2[key]['predict']), "\n")
+    #for key in data1:
+    #    print("Drug",key,":",r2_score(data1[key]['test'],data1[key]['predict']))
+    #    print("Drug", key, " addinfo:", r2_score(data2[key]['test'], data2[key]['predict']), "\n")
         #print("Drug", key, ":", mean_squared_error(data1[key]['test'], data1[key]['predict']),"\n")
     #
     #
     #
     # CLASSIFICATION
+
+    #drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                              cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                              filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=True, z_value=2,
+    #                              smotetomek=False, addInfo=True, save=True)
+
+
     #drugResponseDict = createDrugResponseDict(ic50=ic50, cellLine=cellLine,
-    #                                          filterField='DRUG_ID', nFeatures=30, classification=True, addInfo=True)
+    #                                          filterField='DRUG_ID', nFeatures=30, classification=True, z_value=2, addInfo=True)
     # save to file
     #writePythonObjectToFile(drugResponseDict, 'Drug_Classif_Predictions30_80_z2_ADDINFO')
     #
-    #data1 = loadPythonObjectFromFile('Drug_Classif_Predictions30_80_z2')
-    #data2 = loadPythonObjectFromFile('Drug_Classif_Predictions30_80_z2_ADDINFO')
+    data1 = loadPythonObjectFromFile('Drug_Classif_Predictions30_80_z2')
+    data2 = loadPythonObjectFromFile('Drug_Classif_Predictions30_80_z2_ADDINFO')
+    data1f1 = [(str(drug), f1_score(data1[drug]['test'],data1[drug]['predict'], average='macro')) for drug in data1]
+    data2f1 = [(str(drug), f1_score(data2[drug]['test'],data2[drug]['predict'], average='macro')) for drug in data2]
+
+    #print(Counter(data1[274]['predict']), Counter(data1[274]['test']))
+    #print(f1_score(data1[274]['test'], data1[274]['predict'], average='macro'))
+
+
+    sorteddata1 = sorted(data1f1, key=lambda x: x[1],reverse=True)
+
+    sortedkeys, _ = (zip(*sorteddata1))
+    sortedkeys = list(sortedkeys)
+    print(sortedkeys)
+    print(data2f1)
+    temp = []
+    for key in sortedkeys:
+        temp.append([val for val in data2f1 if val[0] == key][0])
+        #temp.append((key, value))
+
+    print(temp)
+
+    #sorteddata2 = list(map(lambda x: item for item in data2f1 if item[0] == x), sortedkeys)
+
+    print(sorteddata1)
+    xlabels, y = zip(*sorteddata1)
+    _, y2 = zip(*temp)
+
+    fig = plt.figure(figsize=(20, 8))
+    plt.plot(range(len(y)), y, '--g^', range(len(y)), y2, '--r.', linewidth=0.5)
+    #plt.plot()
+    #plt.xticks(range(len(y)),xlabels, rotation='vertical')
+    #plt.xticks([0,1,2,3,4,5,6,7,8,9], xlabels[:9], rotation='vertical')
+    plt.gca().xaxis.set_major_locator(MaxNLocator(prune='lower'))
+    plt.title('Random Figure')
+    plt.xlabel('Drug ID')
+    plt.ylabel('Multiclass Macro F1 Score')
+
+    #[l.set_visible(False) for (i, l) in enumerate(fig.axes.xaxis.get_ticklabels()) if i > 10]
+
+    plt.savefig('Ranks.png', format='png', bbox_inches='tight', dpi=100)
+    plt.show()
+
     #
     #evaluatePerformance(data1[1]['test'], data1[1]['predict'])
     #evaluatePerformance(data2[1]['test'], data2[1]['predict'])

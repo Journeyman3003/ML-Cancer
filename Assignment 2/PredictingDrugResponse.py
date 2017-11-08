@@ -15,16 +15,18 @@ from sklearn.metrics import accuracy_score, f1_score
 from sklearn.metrics import roc_curve, auc
 
 # regression metrics
-from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.metrics import r2_score
 
 
-from sklearn.feature_selection import SelectKBest, chi2, f_regression, mutual_info_regression
+from sklearn.feature_selection import SelectKBest, chi2, f_regression
 
 from sklearn.preprocessing import label_binarize
 
 
 # SMOTE AND TOMEK
 from imblearn.combine import SMOTETomek
+from imblearn.over_sampling import SMOTE
+from imblearn.under_sampling import TomekLinks
 
 from scipy import stats
 from scipy import interp
@@ -184,8 +186,9 @@ def filterAndJoinDataframes(ic50Frame, cellLineFrame, ic50FilterColumn, ic50Filt
     return dataFrame
 
 def smoteTomek(X, y):
-
-    sm = SMOTETomek()
+    smote = SMOTE(k_neighbors=3, m_neighbors=10)
+    tomek = TomekLinks()
+    sm = SMOTETomek(smote=smote, tomek=tomek)
 
     X_resampled, y_resampled = sm.fit_sample(X,y)
 
@@ -366,18 +369,19 @@ def computeMulticlassAuc(y_test, y_predict, classlabels):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Some extension of Receiver operating characteristic to multi-class')
+    plt.title('Individual and multi-class ROC')
     plt.legend(loc="lower right")
     plt.show()
 
 
-def createDrugResponseDict(ic50, cellLine, filterField, nFeatures=-1, classification=True, z_value=2, smotetomek=False,
-                           addInfo=False):
+def createDrugResponseDict(ic50, cellLine, filterField='DRUG_ID', nFeatures=-1, classification=True, z_value=2, smotetomek=False,
+                           addInfo=False, rememberCellLines=False):
 
     drugResponseDict = {}
     drugTargets = None
     cnvData = None
     wesData = None
+    cosmic_IDs = None
     if addInfo:
         drugTargets = createDrugTargetDataframe('Drug_targets.csv')
         print('loading copy number data and WES data (may take some time)...')
@@ -392,7 +396,7 @@ def createDrugResponseDict(ic50, cellLine, filterField, nFeatures=-1, classifica
         joined = filterAndJoinDataframes(ic50, cellLine, filterField, drug)
         if addInfo:
             print('adding additional features, e.g. Drug targets + cell line cnvs')
-            # this file was manually assembled given the info in
+            # the required file was manually assembled given the info in
             # GDSC_Screened_Compounds.csv
             # and
             # GDSC-Drugs-with-SMILES-Aliases.csv
@@ -400,27 +404,98 @@ def createDrugResponseDict(ic50, cellLine, filterField, nFeatures=-1, classifica
 
             joined = addMutationCounter(wesData, joined)
 
+        if rememberCellLines:
+            cosmic_IDs = list(joined['COSMIC_ID'])
+
         X, y = prepareFeatureAndLabelArrays(joined, nFeatures, classification, z_value=z_value)
 
         # apply smoteTomek if desired for classification problem
         if smotetomek and z_value >= 1 and classification:
-            print('somting bitches')
-            X, y = smoteTomek(X,y)
+            try:
+                X, y = smoteTomek(X, y)
+            except Exception:
+                print('whoopsy daisy, you screwed up, could not apply smote tomek to drug', drug, ', skipped...')
+                logging.exception("message")
 
         # 5 fold cross validation
         y_test, y_predict = kFoldCrossValidation(X, y, 5, classification)
-        drugResponseDict[drug] = {'test': y_test, 'predict': y_predict}
 
+        if rememberCellLines:
+            drugResponseDict[drug] = {'test': y_test, 'predict': y_predict, 'COSMIC_ID': cosmic_IDs}
+        else:
+            drugResponseDict[drug] = {'test': y_test, 'predict': y_predict}
+
+        print('DrugResponseDict:\n', drugResponseDict[drug])
+        print('sizes of attributes:')
+        print('test:', len(drugResponseDict[drug]['test']))
+        print('predict:', len(drugResponseDict[drug]['predict']))
+        print('COSMIC_ID:', len(drugResponseDict[drug]['COSMIC_ID']))
 
     return drugResponseDict
 
+# only regression!
+# def createCellLineRanking(ic50, cellLine, cosmic_ID, filterField='DRUG_ID', nFeatures=-1):
+#
+#     cosmicIDFeatures = cellLine[~cellLine['COSMIC_ID'].isin(cosmic_ID)]
+#     if cosmicIDFeatures.shape[0] == 0:
+#         print('Given cell Line with ID', cosmic_ID,
+#               'cannot be analyzed since there are no gene expression values available')
+#     else:
+#         cellLineDict = {}
+#         for i, drug in enumerate(ic50[filterField].unique()):
+#             print(' #####################################\n',
+#                   '##             RUN ',i,'             ##\n',
+#                   '#####################################')
+#             joined = filterAndJoinDataframes(ic50, cellLine, filterField, drug)
+#
+#             # leave out the cell line to be predicted if it is present
+#             joined = joined[joined['COSMIC_ID'].isin(cosmic_ID)]
+#
+#             X_train, y_train = prepareFeatureAndLabelArrays(joined, nFeatures=nFeatures, classification=False)
+#
+#             # take test/train data out of cosmicIDFeatures
+#
+#             X_test = np.array(cosmicIDFeatures.drop('LN_IC50', axis=1))
+#             y_test = np.array(cosmicIDFeatures['LN_IC50'])
+#
+#             # now, similar to leave-one-out classification, train a random forest regressor and test the cell line
+#             forest = RandomForestRegr(X_train, y_train)
+#
+#             y_predict = forest.predict(X_test)
+#
+#             cellLine
 
-def loadAndRun(ic50Filename, cellLineFilename, filterField, nFeatures=-1, filterAUC=0.0, classification=True, z_value=2, smotetomek=False, addInfo=False, save=True):
+
+def createCellLineRanking(drugResponseFile, saveName=''):
+    ic50, cellLine = createDrugResponseDataframes(ic50Filename='v17_fitted_dose_response.csv',
+                                                  cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+                                                  filterAUC=0.80)
+    drugResponseDict = loadPythonObjectFromFile(drugResponseFile)
+
+    cellLineRankings = {}
+    for i, cell in cellLine['COSMIC_ID'].astype(int).iteritems():
+        cellLineRankings[cell] = {'drugPredict': []}
+        for drug in drugResponseDict:
+            indexes = [j for j, cL in enumerate(drugResponseDict[drug]['COSMIC_ID']) if cL == cell]
+            # account for the fact that not every cell line was screened for every drug
+            if len(indexes) > 0:
+                cellLineRankings[cell]['drugPredict'].append((drug, drugResponseDict[drug]['predict'][indexes[0]]))
+
+    if saveName != "":
+        writePythonObjectToFile(cellLineRankings, saveName)
+
+
+    return cellLineRankings
+
+
+
+def loadAndRun(ic50Filename, cellLineFilename, filterField, nFeatures=-1, filterAUC=0.0, classification=True, z_value=2,
+               smotetomek=False, addInfo=False, rememberCellLines=False, save=True):
     ic50, cellLine = createDrugResponseDataframes(ic50Filename, cellLineFilename, filterAUC=filterAUC)
     drugResponseDict = createDrugResponseDict(ic50=ic50, cellLine=cellLine,
                                               filterField=filterField, nFeatures=nFeatures,
                                               classification=classification, z_value=z_value, smotetomek=smotetomek,
-                                              addInfo=addInfo)
+                                              addInfo=addInfo, rememberCellLines=rememberCellLines)
 
     # write to file if desired
     if save:
@@ -430,8 +505,10 @@ def loadAndRun(ic50Filename, cellLineFilename, filterField, nFeatures=-1, filter
         z = '_z' + str(z_value) if classification else ''
         aucThreshold = '_' + str(int(filterAUC * 100))
         st = '_SMOTETOMEK' if smotetomek else ''
+        cL = '_CellLines' if rememberCellLines else ''
 
-        writePythonObjectToFile(drugResponseDict, 'Drug_'+method+'_Predictions'+ n + aucThreshold + st + z + add)
+        writePythonObjectToFile(drugResponseDict, 'Drug_'+method+'_Predictions'+ n + aucThreshold + st + z + add +
+                                cL)
 
     return drugResponseDict
 
@@ -449,97 +526,207 @@ def loadPythonObjectFromFile(filename):
     return object
 
 
+def plotAndSavePerformance(mainFile, labels, filenameList = None, classification=True, saveName=""):
+
+    mainData = loadPythonObjectFromFile(mainFile)
+
+    mainScore = [(str(drug), f1_score(mainData[drug]['test'], mainData[drug]['predict'], average='macro') if classification else
+                          r2_score(mainData[drug]['test'], mainData[drug]['predict']))
+              for drug in mainData]
+
+    main = sorted(mainScore, key=lambda x: x[1], reverse=True)
+
+    sortedkeys, _ = zip(*main)
+    sortedkeys = list(sortedkeys)
+
+    xlabels, y = zip(*main)
+
+    fig = plt.figure(figsize=(20, 8))
+    plt.plot(range(len(y)), y, '--g^', linewidth=0.5, label=labels[0])
+
+    plt.title('Performance')
+    plt.xlabel('Drug ID')
+    if classification:
+        plt.ylabel('Multiclass Macro F1 Score')
+    else:
+        plt.ylabel('R2 Score')
+
+    try:
+        for i, file in enumerate(filenameList):
+            data = (loadPythonObjectFromFile(file))
+            dataScore = [(str(drug), f1_score(data[drug]['test'], data[drug]['predict'],
+                                              average='macro') if classification else
+                                     r2_score(data[drug]['test'], data[drug]['predict']))
+                         for drug in data]
+            temp = []
+            for key in sortedkeys:
+                temp.append([val for val in dataScore if val[0] == key][0])
+
+            _, y2 = zip(*temp)
+
+            plt.plot(range(len(y)), y2, '--.', color="rbgkm"[i], linewidth=0.5, label=labels[i+1])
+    except TypeError:
+        print('no additional results given to plot')
+        logging.exception("message")
+    plt.legend(loc='upper right')
+    plt.xticks(range(len(xlabels)), xlabels, rotation='vertical')
+    locs, labs = plt.xticks()
+    plt.xticks(locs[0:9])
+
+    if saveName != "":
+        plt.savefig(saveName+'.png', format='png', bbox_inches='tight', dpi=100)
+    plt.show()
+
+
+def plotAndSaveCellLineRanking(rankingFile, cosmicID, saveName=''):
+
+    cellLineRankings = loadPythonObjectFromFile(rankingFile)
+    desc = sorted(cellLineRankings[cosmicID]['drugPredict'], key=lambda drug: drug[1])
+
+    x, y = zip(*desc)
+
+    plt.figure(figsize=(20, 8))
+
+    plt.plot(range(len(x)), y, '--r.', linewidth=0.5, label='Performance of drugs on cell line ' + str(cosmicID) + ' in descending order')
+    plt.xticks(range(len(x)), x, rotation='vertical')
+    plt.legend(loc='upper left')
+
+    if saveName != "":
+        plt.savefig(saveName+'.png', format='png', bbox_inches='tight', dpi=100)
+    plt.show()
+
 if __name__ == '__main__':
 
     # yes, deactivating warnings might sometimes be a bad idea, but this time it should be fine...
     pd.options.mode.chained_assignment = None
 
-    # createDrugTargetDataframe('Drug_targets.csv')
-    #df = createCopyNumberVariationDataframe('Gene_level_CN.csv')
+    np.random.seed(42)
     #
-    #ic50, cellLine = createDrugResponseDataframes('v17_fitted_dose_response.csv',
-    #                                              'Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
-    #                                              filterAUC=0.80)
+    # compare smote tomek to without smote tomek:
+    #plotAndSavePerformance('Drug_Classif_Predictions30_80_SMOTETOMEK_z1', ['SMOTE + Tomek Links', 'unbalanced data'],
+    #                       ['Drug_Classif_Predictions30_80_z1'], classification=True,
+    #                       saveName='ClassificationSMOTEComparison')
     #
-    # REGRESSION
+    #
+    # plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['default', 'with CNV and mutation count'],
+    #                        ['Drug_Classif_Predictions30_80_z2_ADDINFO'], classification=True,
+    #                        saveName='ClassificationComparison')
+    #
+    # plotAndSavePerformance('Drug_Regr_Predictions30_80',['default', 'with CNV and mutation count'],
+    #                        ['Drug_Regr_Predictions30_80_ADDINFO'], classification=False,
+    #                        saveName='RegressionComparison')
+    #
+    # # REGRESSION RUNS
+    # """
+    # first trial with 3 features and no AUC filter applied to ic50
+    # """
+    # drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                               cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                               filterField='DRUG_ID', nFeatures=3, filterAUC=0.0, classification=False,
+    #                               addInfo=False, save=True)
+    #
+    # drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                               cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                               filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=False,
+    #                               addInfo=False, save=True)
+    #
+    # drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                               cellLineFilename= 'Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                               filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=False,
+    #                               addInfo=True, save=True)
+    #
+    # #
+    # #data1 = loadPythonObjectFromFile('Drug_Regr_Predictions30_80')
+    # #data2 = loadPythonObjectFromFile('Drug_Regr_Predictions30_80_ADDINFO')
+    # #
+    # #for key in data1:
+    # #    print("Drug",key,":",r2_score(data1[key]['test'],data1[key]['predict']))
+    # #    print("Drug", key, " addinfo:", r2_score(data2[key]['test'], data2[key]['predict']), "\n")
+    #     #print("Drug", key, ":", mean_squared_error(data1[key]['test'], data1[key]['predict']),"\n")
+    # #
+    # #
+    # #
+    # # CLASSIFICATION RUNS (z=2)
+    # """
+    # first trial with 3 features and no AUC filter applied to ic50
+    # """
+    # drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                               cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                               filterField='DRUG_ID', nFeatures=3, filterAUC=0.0, classification=True, z_value=2,
+    #                               smotetomek=False, addInfo=False, save=True)
+    #
+    # """
+    # 30 features, 80% AUC filter, NO additional data/features (task 1)
+    # """
+    # drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                               cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                               filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=True, z_value=2,
+    #                               smotetomek=False, addInfo=False, save=True)
+    #
+    # """
+    # 30 features, 80% AUC filter, USE additional data/features (task 2)
+    # """
+    # drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                               cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                               filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=True, z_value=2,
+    #                               smotetomek=False, addInfo=True, save=True)
 
-    #drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
-    #                              cellLineFilename= 'Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
-    #                              filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=False,
-    #                              addInfo=True, save=True)
+    """
+    SMOTE TOMEK LINK RUNS (z=1)
+    """
 
-    #drugResponseDict = createDrugResponseDict(ic50=ic50, cellLine=cellLine,
-    #                                          filterField='DRUG_ID', nFeatures=30, classification=False, addInfo=True)
-    # save to file
-    #writePythonObjectToFile(drugResponseDict, 'Drug_Regr_Predictions30_80_ADDINFO')
-    #
-    #data1 = loadPythonObjectFromFile('Drug_Regr_Predictions30_80')
-    #data2 = loadPythonObjectFromFile('Drug_Regr_Predictions30_80_ADDINFO')
-    #
-    #for key in data1:
-    #    print("Drug",key,":",r2_score(data1[key]['test'],data1[key]['predict']))
-    #    print("Drug", key, " addinfo:", r2_score(data2[key]['test'], data2[key]['predict']), "\n")
-        #print("Drug", key, ":", mean_squared_error(data1[key]['test'], data1[key]['predict']),"\n")
-    #
-    #
-    #
-    # CLASSIFICATION
+    """
+    comparison run, NO smote:
+    """
+    # drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                               cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                               filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=True, z_value=1,
+    #                               smotetomek=False, addInfo=False, save=True)
 
+    """
+    no added info aka task 1:
+    """
+    # drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                               cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                               filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=True, z_value=1,
+    #                               smotetomek=True, addInfo=False, save=True)
+
+    """
+    with added info aka task 2:
+    """
     #drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
     #                              cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
-    #                              filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=True, z_value=2,
-    #                              smotetomek=False, addInfo=True, save=True)
+    #                              filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=True, z_value=1,
+    #                              smotetomek=True, addInfo=True, save=True)
 
 
-    #drugResponseDict = createDrugResponseDict(ic50=ic50, cellLine=cellLine,
-    #                                          filterField='DRUG_ID', nFeatures=30, classification=True, z_value=2, addInfo=True)
-    # save to file
-    #writePythonObjectToFile(drugResponseDict, 'Drug_Classif_Predictions30_80_z2_ADDINFO')
-    #
-    data1 = loadPythonObjectFromFile('Drug_Classif_Predictions30_80_z2')
-    data2 = loadPythonObjectFromFile('Drug_Classif_Predictions30_80_z2_ADDINFO')
-    data1f1 = [(str(drug), f1_score(data1[drug]['test'],data1[drug]['predict'], average='macro')) for drug in data1]
-    data2f1 = [(str(drug), f1_score(data2[drug]['test'],data2[drug]['predict'], average='macro')) for drug in data2]
 
-    #print(Counter(data1[274]['predict']), Counter(data1[274]['test']))
-    #print(f1_score(data1[274]['test'], data1[274]['predict'], average='macro'))
+    """
+    TASK 3 RUNS
+    """
+    # drugResponseDict = loadAndRun(ic50Filename='v17_fitted_dose_response.csv',
+    #                               cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                               filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=False, save=True,
+    #                               rememberCellLines=True)
 
 
-    sorteddata1 = sorted(data1f1, key=lambda x: x[1],reverse=True)
+    createCellLineRanking('Drug_Regr_Predictions30_80_CellLines', saveName='CellLineRankings')
 
-    sortedkeys, _ = (zip(*sorteddata1))
-    sortedkeys = list(sortedkeys)
-    print(sortedkeys)
-    print(data2f1)
-    temp = []
-    for key in sortedkeys:
-        temp.append([val for val in data2f1 if val[0] == key][0])
-        #temp.append((key, value))
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=906794, saveName='906794')
 
-    print(temp)
 
-    #sorteddata2 = list(map(lambda x: item for item in data2f1 if item[0] == x), sortedkeys)
 
-    print(sorteddata1)
-    xlabels, y = zip(*sorteddata1)
-    _, y2 = zip(*temp)
 
-    fig = plt.figure(figsize=(20, 8))
-    plt.plot(range(len(y)), y, '--g^', range(len(y)), y2, '--r.', linewidth=0.5)
-    #plt.plot()
-    #plt.xticks(range(len(y)),xlabels, rotation='vertical')
-    #plt.xticks([0,1,2,3,4,5,6,7,8,9], xlabels[:9], rotation='vertical')
-    plt.gca().xaxis.set_major_locator(MaxNLocator(prune='lower'))
-    plt.title('Random Figure')
-    plt.xlabel('Drug ID')
-    plt.ylabel('Multiclass Macro F1 Score')
 
-    #[l.set_visible(False) for (i, l) in enumerate(fig.axes.xaxis.get_ticklabels()) if i > 10]
 
-    plt.savefig('Ranks.png', format='png', bbox_inches='tight', dpi=100)
-    plt.show()
 
-    #
+
+
+
+
+
+
+
     #evaluatePerformance(data1[1]['test'], data1[1]['predict'])
     #evaluatePerformance(data2[1]['test'], data2[1]['predict'])
     #

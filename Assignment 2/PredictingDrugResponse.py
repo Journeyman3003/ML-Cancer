@@ -488,6 +488,25 @@ def createCellLineRanking(drugResponseFile, saveName=''):
     return cellLineRankings
 
 
+def createRealCellLineRanking(ic50Filename, cellLineFilename, cosmicID, filterAUC=0.0):
+    ic50, cellLine = createDrugResponseDataframes(ic50Filename='v17_fitted_dose_response.csv',
+                                                  cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+                                                  filterAUC=0.80)
+
+    # retrieve combined data for all the drugs that were tested on a given cell line
+    joined = filterAndJoinDataframes(ic50Frame=ic50,cellLineFrame=cellLine,ic50FilterColumn='COSMIC_ID',
+                                     ic50FilterValue=cosmicID)
+
+    # drop all unnecessary columns
+    joined = joined[['COSMIC_ID', 'DRUG_ID', 'LN_IC50']]
+
+    tuples = [(row['DRUG_ID'], row['LN_IC50']) for _, row in joined.iterrows()]
+
+    sortedRanking = sorted(tuples, key=lambda drug: drug[1])
+
+    return sortedRanking
+
+
 
 def loadAndRun(ic50Filename, cellLineFilename, filterField, nFeatures=-1, filterAUC=0.0, classification=True, z_value=2,
                smotetomek=False, addInfo=False, rememberCellLines=False, save=True):
@@ -544,7 +563,7 @@ def plotAndSavePerformance(mainFile, labels, filenameList = None, classification
     fig = plt.figure(figsize=(20, 8))
     plt.plot(range(len(y)), y, '--g^', linewidth=0.5, label=labels[0])
 
-    plt.title('Performance')
+    plt.title('Performance of by-drug ' + ('classification' if classification else 'regression') + ' models')
     plt.xlabel('Drug ID')
     if classification:
         plt.ylabel('Multiclass Macro F1 Score')
@@ -568,6 +587,8 @@ def plotAndSavePerformance(mainFile, labels, filenameList = None, classification
     except TypeError:
         print('no additional results given to plot')
         logging.exception("message")
+
+    plt.xlim(xmin=-3, xmax=len(xlabels) + 3)
     plt.legend(loc='upper right')
     plt.xticks(range(len(xlabels)), xlabels, rotation='vertical')
     locs, labs = plt.xticks()
@@ -578,22 +599,64 @@ def plotAndSavePerformance(mainFile, labels, filenameList = None, classification
     plt.show()
 
 
-def plotAndSaveCellLineRanking(rankingFile, cosmicID, saveName=''):
+def plotAndSaveCellLineRanking(rankingFile, cosmicID,  saveName=''):
 
-    cellLineRankings = loadPythonObjectFromFile(rankingFile)
-    desc = sorted(cellLineRankings[cosmicID]['drugPredict'], key=lambda drug: drug[1])
+    cellLineRankingsDict = loadPythonObjectFromFile(rankingFile)
+    cellLineRankings = cellLineRankingsDict[cosmicID]['drugPredict']
 
-    x, y = zip(*desc)
+    # sorted ranking for comparison
+    comparison = createRealCellLineRanking(ic50Filename='v17_fitted_dose_response.csv',
+                                           cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+                                           cosmicID=cosmicID, filterAUC=0.8)
 
-    plt.figure(figsize=(20, 8))
+    x, y = zip(*comparison)
 
-    plt.plot(range(len(x)), y, '--r.', linewidth=0.5, label='Performance of drugs on cell line ' + str(cosmicID) + ' in descending order')
+    predicted = []
+    for drug in x:
+        predicted.append([val for val in cellLineRankings if val[0] == drug][0])
+
+    _, y_predicted = zip(*predicted)
+
+    plt.figure(figsize=(30, 8))
+
+    plt.plot(range(len(x)), y_predicted, '--g^', linewidth=0.5,
+             label='Corresponding predicted performance of drugs on cell line ' + str(cosmicID))
+    plt.plot(range(len(x)), y, '--r.', linewidth=0.5,
+             label='Performance of drugs on cell line ' + str(cosmicID) + ' in descending order')
+
+    plt.xlabel('Drug ID')
+    plt.ylabel('ln(IC50) for each Drug')
+    plt.xlim(xmin=-3, xmax=len(x)+3)
     plt.xticks(range(len(x)), x, rotation='vertical')
+    plt.legend(loc='upper left')
+
+    if saveName != "":
+        plt.savefig(saveName+'_Comparison.png', format='png', bbox_inches='tight', dpi=100)
+    plt.show()
+
+
+    # show only performance of tree
+
+    desc = sorted(cellLineRankings, key=lambda drug: drug[1])
+
+    x_predicted, y_predicted = zip(*desc)
+
+    plt.figure(figsize=(30, 8))
+
+    plt.plot(range(len(x_predicted)), y_predicted, '--g^', linewidth=0.5,
+             label='Predicted performance of drugs on cell line ' + str(cosmicID) + ' in descending order')
+
+    plt.xlabel('Drug ID')
+    plt.ylabel('ln(IC50) for each Drug')
+    plt.xlim(xmin=-3, xmax=len(x_predicted) + 3)
+
+    plt.xticks(range(len(x_predicted)), x_predicted, rotation='vertical')
     plt.legend(loc='upper left')
 
     if saveName != "":
         plt.savefig(saveName+'.png', format='png', bbox_inches='tight', dpi=100)
     plt.show()
+
 
 if __name__ == '__main__':
 
@@ -601,21 +664,58 @@ if __name__ == '__main__':
     pd.options.mode.chained_assignment = None
 
     np.random.seed(42)
-    #
-    # compare smote tomek to without smote tomek:
-    #plotAndSavePerformance('Drug_Classif_Predictions30_80_SMOTETOMEK_z1', ['SMOTE + Tomek Links', 'unbalanced data'],
-    #                       ['Drug_Classif_Predictions30_80_z1'], classification=True,
-    #                       saveName='ClassificationSMOTEComparison')
-    #
-    #
-    # plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['default', 'with CNV and mutation count'],
-    #                        ['Drug_Classif_Predictions30_80_z2_ADDINFO'], classification=True,
-    #                        saveName='ClassificationComparison')
-    #
-    # plotAndSavePerformance('Drug_Regr_Predictions30_80',['default', 'with CNV and mutation count'],
-    #                        ['Drug_Regr_Predictions30_80_ADDINFO'], classification=False,
-    #                        saveName='RegressionComparison')
-    #
+
+    #createRealCellLineRanking(ic50Filename='v17_fitted_dose_response.csv',
+    #                          cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
+    #                          cosmicID=924100, filterAUC=0.8)
+
+
+    """
+    TASK 1 PLOTS
+    """
+    """
+    CLASSIFICATION
+    """
+    plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['Performance of classification models'],
+                           classification=True,
+                           saveName='ClassificationEvaluation')
+    """
+    REGRESSION
+    """
+    plotAndSavePerformance('Drug_Regr_Predictions30_80', ['Performance of regression models'],
+                           classification=False,
+                           saveName='RegressionEvaluation')
+
+    """
+    SMOTE-TOMEK vs. UNBALANCED DATA
+    """
+    plotAndSavePerformance('Drug_Classif_Predictions30_80_SMOTETOMEK_z1', ['SMOTE + Tomek Links', 'unbalanced data'],
+                          ['Drug_Classif_Predictions30_80_z1'], classification=True,
+                          saveName='ClassificationSMOTEComparison')
+    """
+    TASK 2 PLOTS
+    """
+    """
+    CLASSIFICATION vs. CLASSIFICATION + ADDINFO
+    """
+    plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['default', 'with CNV and mutation count'],
+                           ['Drug_Classif_Predictions30_80_z2_ADDINFO'], classification=True,
+                           saveName='ClassificationComparison')
+    """
+    CLASSIFICATION vs. CLASSIFICATION + ADDINFO
+    """
+    plotAndSavePerformance('Drug_Regr_Predictions30_80',['default', 'with CNV and mutation count'],
+                           ['Drug_Regr_Predictions30_80_ADDINFO'], classification=False,
+                           saveName='RegressionComparison')
+    """
+    TASK 3 PLOTS
+    """
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=906794, saveName='906794')
+
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=924100, saveName='924100')
+
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=683665, saveName='683665')
+
     # # REGRESSION RUNS
     # """
     # first trial with 3 features and no AUC filter applied to ic50
@@ -709,10 +809,6 @@ if __name__ == '__main__':
     #                               filterField='DRUG_ID', nFeatures=30, filterAUC=0.80, classification=False, save=True,
     #                               rememberCellLines=True)
 
-
-    createCellLineRanking('Drug_Regr_Predictions30_80_CellLines', saveName='CellLineRankings')
-
-    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=906794, saveName='906794')
 
 
 

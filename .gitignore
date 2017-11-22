@@ -11,3 +11,5 @@
 #png files
 *.png
 
+#zip files
+*.zip

@@ -1,14 +1,12 @@
 import pandas as pd
 import os
 import logging
-from collections import Counter
 
 import numpy as np
 
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.model_selection import train_test_split, KFold
+from sklearn.model_selection import KFold
 import matplotlib.pyplot as plt
-from matplotlib.ticker import MaxNLocator
 
 # classification metrics
 from sklearn.metrics import accuracy_score, f1_score
@@ -17,11 +15,9 @@ from sklearn.metrics import roc_curve, auc
 # regression metrics
 from sklearn.metrics import r2_score
 
-
 from sklearn.feature_selection import SelectKBest, chi2, f_regression
 
 from sklearn.preprocessing import label_binarize
-
 
 # SMOTE AND TOMEK
 from imblearn.combine import SMOTETomek
@@ -31,13 +27,13 @@ from imblearn.under_sampling import TomekLinks
 from scipy import stats
 from scipy import interp
 
-# to deserialize/serialize the classifiers to/from disk
+# to deserialize/serialize the results to/from disk
 import pickle as pkl
 
 from itertools import cycle
 from collections import Counter
 
-# ADJUST/set to blank
+# ADJUST/set to blank if required
 filepath = 'MLiC-Lab2'
 
 def summarizeDF(df):
@@ -433,38 +429,6 @@ def createDrugResponseDict(ic50, cellLine, filterField='DRUG_ID', nFeatures=-1, 
 
     return drugResponseDict
 
-# only regression!
-# def createCellLineRanking(ic50, cellLine, cosmic_ID, filterField='DRUG_ID', nFeatures=-1):
-#
-#     cosmicIDFeatures = cellLine[~cellLine['COSMIC_ID'].isin(cosmic_ID)]
-#     if cosmicIDFeatures.shape[0] == 0:
-#         print('Given cell Line with ID', cosmic_ID,
-#               'cannot be analyzed since there are no gene expression values available')
-#     else:
-#         cellLineDict = {}
-#         for i, drug in enumerate(ic50[filterField].unique()):
-#             print(' #####################################\n',
-#                   '##             RUN ',i,'             ##\n',
-#                   '#####################################')
-#             joined = filterAndJoinDataframes(ic50, cellLine, filterField, drug)
-#
-#             # leave out the cell line to be predicted if it is present
-#             joined = joined[joined['COSMIC_ID'].isin(cosmic_ID)]
-#
-#             X_train, y_train = prepareFeatureAndLabelArrays(joined, nFeatures=nFeatures, classification=False)
-#
-#             # take test/train data out of cosmicIDFeatures
-#
-#             X_test = np.array(cosmicIDFeatures.drop('LN_IC50', axis=1))
-#             y_test = np.array(cosmicIDFeatures['LN_IC50'])
-#
-#             # now, similar to leave-one-out classification, train a random forest regressor and test the cell line
-#             forest = RandomForestRegr(X_train, y_train)
-#
-#             y_predict = forest.predict(X_test)
-#
-#             cellLine
-
 
 def createCellLineRanking(drugResponseFile, saveName=''):
     ic50, cellLine = createDrugResponseDataframes(ic50Filename='v17_fitted_dose_response.csv',
@@ -489,9 +453,9 @@ def createCellLineRanking(drugResponseFile, saveName=''):
 
 
 def createRealCellLineRanking(ic50Filename, cellLineFilename, cosmicID, filterAUC=0.0):
-    ic50, cellLine = createDrugResponseDataframes(ic50Filename='v17_fitted_dose_response.csv',
-                                                  cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
-                                                  filterAUC=0.80)
+    ic50, cellLine = createDrugResponseDataframes(ic50Filename=ic50Filename,
+                                                  cellLineFilename=cellLineFilename,
+                                                  filterAUC=filterAUC)
 
     # retrieve combined data for all the drugs that were tested on a given cell line
     joined = filterAndJoinDataframes(ic50Frame=ic50,cellLineFrame=cellLine,ic50FilterColumn='COSMIC_ID',
@@ -545,7 +509,7 @@ def loadPythonObjectFromFile(filename):
     return object
 
 
-def plotAndSavePerformance(mainFile, labels, filenameList = None, classification=True, saveName=""):
+def plotAndSavePerformance(mainFile, labels, filenameList = None, classification=True, ticks=True, saveName=""):
 
     mainData = loadPythonObjectFromFile(mainFile)
 
@@ -590,16 +554,37 @@ def plotAndSavePerformance(mainFile, labels, filenameList = None, classification
 
     plt.xlim(xmin=-3, xmax=len(xlabels) + 3)
     plt.legend(loc='upper right')
-    plt.xticks(range(len(xlabels)), xlabels, rotation='vertical')
-    locs, labs = plt.xticks()
-    plt.xticks(locs[0:9])
+
+    if ticks:
+        plt.xticks(range(len(xlabels)), xlabels, rotation='vertical')
+
+        plt.gca().margins(x=0)
+        plt.gcf().canvas.draw()
+        tl = plt.gca().get_xticklabels()
+        maxsize = max([t.get_window_extent().width for t in tl])
+        m = 0.2  # inch margin
+        s = maxsize / plt.gcf().dpi * len(xlabels) + 2 * m
+        margin = m / plt.gcf().get_size_inches()[0]
+
+        plt.gcf().subplots_adjust(left=margin, right=1. - margin)
+        plt.gcf().set_size_inches(s, plt.gcf().get_size_inches()[1])
+
+        # color 10 best and 10 worst
+
+        [i.set_color("green") for i in plt.gca().get_xticklabels()[:10]]
+
+        [i.set_color("red") for i in plt.gca().get_xticklabels()[len(xlabels)-10:]]
+    else:
+        plt.xticks(range(len(xlabels)), [''] * len(xlabels))
+
 
     if saveName != "":
         plt.savefig(saveName+'.png', format='png', bbox_inches='tight', dpi=100)
-    plt.show()
+    #plt.show()
+    plt.close()
 
 
-def plotAndSaveCellLineRanking(rankingFile, cosmicID,  saveName=''):
+def plotAndSaveCellLineRanking(rankingFile, cosmicID, ticks=True, saveName=''):
 
     cellLineRankingsDict = loadPythonObjectFromFile(rankingFile)
     cellLineRankings = cellLineRankingsDict[cosmicID]['drugPredict']
@@ -617,23 +602,54 @@ def plotAndSaveCellLineRanking(rankingFile, cosmicID,  saveName=''):
 
     _, y_predicted = zip(*predicted)
 
-    plt.figure(figsize=(30, 8))
+    # compute spearman rank correlation
+    comparisonrank = stats.rankdata(y, method='average')
+
+    predictedrank = stats.rankdata(y_predicted, method='average')
+
+    spearmanRCol, pvalue = stats.spearmanr(comparisonrank,predictedrank)
+
+    print(spearmanRCol,pvalue)
+
+    fig = plt.figure(figsize=(20, 8))
 
     plt.plot(range(len(x)), y_predicted, '--g^', linewidth=0.5,
              label='Corresponding predicted performance of drugs on cell line ' + str(cosmicID))
     plt.plot(range(len(x)), y, '--r.', linewidth=0.5,
              label='Performance of drugs on cell line ' + str(cosmicID) + ' in descending order')
 
+    ax = fig.add_subplot(111)
+    plt.text(0.02, 0.8, 'Spearman Rank Correlation: ' + str(round(spearmanRCol, 4)) +'\np-value: ' + format(pvalue, '.3g'),
+             horizontalalignment='left',
+             verticalalignment='center',
+             transform=ax.transAxes,
+             bbox={'facecolor': 'white', 'alpha': 0.5, 'pad': 10})
+
+    if ticks:
+        plt.xticks(range(len(x)), x, rotation='vertical')
+
+        plt.gca().margins(x=0)
+        plt.gcf().canvas.draw()
+        tl = plt.gca().get_xticklabels()
+        maxsize = max([t.get_window_extent().width for t in tl])
+        m = 0.2  # inch margin
+        s = maxsize / plt.gcf().dpi * len(x) + 2 * m
+        margin = m / plt.gcf().get_size_inches()[0]
+
+        plt.gcf().subplots_adjust(left=margin, right=1. - margin)
+        plt.gcf().set_size_inches(s, plt.gcf().get_size_inches()[1])
+    else:
+        plt.xticks(range(len(x)), [''] * len(x))
+
     plt.xlabel('Drug ID')
     plt.ylabel('ln(IC50) for each Drug')
     plt.xlim(xmin=-3, xmax=len(x)+3)
-    plt.xticks(range(len(x)), x, rotation='vertical')
     plt.legend(loc='upper left')
 
     if saveName != "":
         plt.savefig(saveName+'_Comparison.png', format='png', bbox_inches='tight', dpi=100)
-    plt.show()
-
+    #plt.show()
+    plt.close()
 
     # show only performance of tree
 
@@ -641,7 +657,7 @@ def plotAndSaveCellLineRanking(rankingFile, cosmicID,  saveName=''):
 
     x_predicted, y_predicted = zip(*desc)
 
-    plt.figure(figsize=(30, 8))
+    plt.figure(figsize=(20, 8))
 
     plt.plot(range(len(x_predicted)), y_predicted, '--g^', linewidth=0.5,
              label='Predicted performance of drugs on cell line ' + str(cosmicID) + ' in descending order')
@@ -650,12 +666,35 @@ def plotAndSaveCellLineRanking(rankingFile, cosmicID,  saveName=''):
     plt.ylabel('ln(IC50) for each Drug')
     plt.xlim(xmin=-3, xmax=len(x_predicted) + 3)
 
-    plt.xticks(range(len(x_predicted)), x_predicted, rotation='vertical')
+    if ticks:
+        plt.xticks(range(len(x_predicted)), x_predicted, rotation='vertical')
+
+        plt.gca().margins(x=0)
+        plt.gcf().canvas.draw()
+        tl = plt.gca().get_xticklabels()
+        maxsize = max([t.get_window_extent().width for t in tl])
+        m = 0.2  # inch margin
+        s = maxsize / plt.gcf().dpi * len(x_predicted) + 2 * m
+        margin = m / plt.gcf().get_size_inches()[0]
+
+        plt.gcf().subplots_adjust(left=margin, right=1. - margin)
+        plt.gcf().set_size_inches(s, plt.gcf().get_size_inches()[1])
+
+        # color 10 best and 10 worst
+
+        [i.set_color("green") for i in plt.gca().get_xticklabels()[:10]]
+
+        [i.set_color("red") for i in plt.gca().get_xticklabels()[len(x_predicted) - 10:]]
+
+    else:
+        plt.xticks(range(len(x_predicted)), [''] * len(x_predicted))
+
     plt.legend(loc='upper left')
 
     if saveName != "":
         plt.savefig(saveName+'.png', format='png', bbox_inches='tight', dpi=100)
-    plt.show()
+    #plt.show()
+    plt.close()
 
 
 if __name__ == '__main__':
@@ -665,56 +704,74 @@ if __name__ == '__main__':
 
     np.random.seed(42)
 
-    #createRealCellLineRanking(ic50Filename='v17_fitted_dose_response.csv',
-    #                          cellLineFilename='Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
-    #                          cosmicID=924100, filterAUC=0.8)
-
-
     """
     TASK 1 PLOTS
     """
     """
     CLASSIFICATION
     """
-    plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['Performance of classification models'],
-                           classification=True,
-                           saveName='ClassificationEvaluation')
-    """
-    REGRESSION
-    """
-    plotAndSavePerformance('Drug_Regr_Predictions30_80', ['Performance of regression models'],
-                           classification=False,
-                           saveName='RegressionEvaluation')
-
-    """
-    SMOTE-TOMEK vs. UNBALANCED DATA
-    """
-    plotAndSavePerformance('Drug_Classif_Predictions30_80_SMOTETOMEK_z1', ['SMOTE + Tomek Links', 'unbalanced data'],
-                          ['Drug_Classif_Predictions30_80_z1'], classification=True,
-                          saveName='ClassificationSMOTEComparison')
-    """
-    TASK 2 PLOTS
-    """
-    """
-    CLASSIFICATION vs. CLASSIFICATION + ADDINFO
-    """
-    plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['default', 'with CNV and mutation count'],
-                           ['Drug_Classif_Predictions30_80_z2_ADDINFO'], classification=True,
-                           saveName='ClassificationComparison')
-    """
-    CLASSIFICATION vs. CLASSIFICATION + ADDINFO
-    """
-    plotAndSavePerformance('Drug_Regr_Predictions30_80',['default', 'with CNV and mutation count'],
-                           ['Drug_Regr_Predictions30_80_ADDINFO'], classification=False,
-                           saveName='RegressionComparison')
+    # plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['Performance of classification models'],
+    #                        classification=True, ticks=False,
+    #                        saveName='ClassificationEvaluation')
+    #
+    # plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['Performance of classification models'],
+    #                        classification=True, ticks=True,
+    #                        saveName='ClassificationEvaluation_Ticks')
+    # """
+    # REGRESSION
+    # """
+    # plotAndSavePerformance('Drug_Regr_Predictions30_80', ['Performance of regression models'],
+    #                        classification=False, ticks=False,
+    #                        saveName='RegressionEvaluation')
+    #
+    # plotAndSavePerformance('Drug_Regr_Predictions30_80', ['Performance of regression models'],
+    #                        classification=False, ticks=True,
+    #                        saveName='RegressionEvaluation_Ticks')
+    #
+    # """
+    # SMOTE-TOMEK vs. UNBALANCED DATA
+    # """
+    # plotAndSavePerformance('Drug_Classif_Predictions30_80_SMOTETOMEK_z1', ['SMOTE + Tomek Links', 'unbalanced data'],
+    #                       ['Drug_Classif_Predictions30_80_z1'], classification=True, ticks=False,
+    #                       saveName='ClassificationSMOTEComparison')
+    #
+    # plotAndSavePerformance('Drug_Classif_Predictions30_80_SMOTETOMEK_z1', ['SMOTE + Tomek Links', 'unbalanced data'],
+    #                        ['Drug_Classif_Predictions30_80_z1'], classification=True, ticks=True,
+    #                        saveName='ClassificationSMOTEComparison_Ticks')
+    # """
+    # TASK 2 PLOTS
+    # """
+    # """
+    # CLASSIFICATION vs. CLASSIFICATION + ADDINFO
+    # """
+    # plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['default', 'with CNV and mutation count'],
+    #                        ['Drug_Classif_Predictions30_80_z2_ADDINFO'], classification=True, ticks=False,
+    #                        saveName='ClassificationComparison')
+    #
+    # plotAndSavePerformance('Drug_Classif_Predictions30_80_z2', ['default', 'with CNV and mutation count'],
+    #                        ['Drug_Classif_Predictions30_80_z2_ADDINFO'], classification=True, ticks=True,
+    #                        saveName='ClassificationComparison_Ticks')
+    # """
+    # CLASSIFICATION vs. CLASSIFICATION + ADDINFO
+    # """
+    # plotAndSavePerformance('Drug_Regr_Predictions30_80',['default', 'with CNV and mutation count'],
+    #                        ['Drug_Regr_Predictions30_80_ADDINFO'], classification=False, ticks=False,
+    #                        saveName='RegressionComparison')
+    #
+    # plotAndSavePerformance('Drug_Regr_Predictions30_80', ['default', 'with CNV and mutation count'],
+    #                        ['Drug_Regr_Predictions30_80_ADDINFO'], classification=False, ticks=True,
+    #                        saveName='RegressionComparison_Ticks')
     """
     TASK 3 PLOTS
     """
-    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=906794, saveName='906794')
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=906794, saveName='906794_Ticks', ticks=True)
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=906794, saveName='906794', ticks=False)
 
-    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=924100, saveName='924100')
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=924100, saveName='924100_Ticks', ticks=True)
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=924100, saveName='924100', ticks=False)
 
-    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=683665, saveName='683665')
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=683665, saveName='683665_Ticks', ticks=True)
+    plotAndSaveCellLineRanking(rankingFile='CellLineRankings', cosmicID=683665, saveName='683665', ticks=False)
 
     # # REGRESSION RUNS
     # """
@@ -800,7 +857,6 @@ if __name__ == '__main__':
     #                              smotetomek=True, addInfo=True, save=True)
 
 
-
     """
     TASK 3 RUNS
     """
@@ -810,54 +866,3 @@ if __name__ == '__main__':
     #                               rememberCellLines=True)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-    #evaluatePerformance(data1[1]['test'], data1[1]['predict'])
-    #evaluatePerformance(data2[1]['test'], data2[1]['predict'])
-    #
-    # #joined = filterAndJoinDataframes(ic50, cellLine, 'DRUG_ID', 1)
-    #
-    # #X, y = prepareFeatureAndLabelArrays(joined)
-    #
-    # #y_test, y_predict = kFoldCrossValidation(X, y, 5)
-    # #evaluatePerformance(y_test=y_test, y_predict=y_predict)
-    #
-    #
-    #
-    # # SMOTETomek Test
-    #
-    # ic50, cellLine = createDrugResponseDataframes('v17_fitted_dose_response.csv',
-    #                                               'Cell_line_COSMIC_ID_gene_expression_transposed_clean.tsv',
-    #                                               filterAUC=0.80)
-    # join = filterAndJoinDataframes(ic50,cellLine,'DRUG_ID',1)
-    #
-    # #BEFORE
-    # X, y = prepareFeatureAndLabelArrays(join, 30, classification=True)
-    # print(' Before:', '\nX:', X, '\ny:', y)
-    #
-    # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    # classif = RandomForestClassif(X_train, y_train)
-    #
-    # evaluatePerformance(y_test, classif.predict(X_test))
-    # print(Counter(y))
-    #
-    # #AFTER
-    # X_new, y_new = smoteTomek(X,y)
-    # print(' After:', '\nX:', X_new, '\ny:', y_new)
-    #
-    # X_train, X_test, y_train, y_test = train_test_split(X_new, y_new, test_size=0.2, random_state=42)
-    # classif = RandomForestClassif(X_train, y_train)
-    #
-    # evaluatePerformance(y_test, classif.predict(X_test))
-    # print(Counter(y_new))

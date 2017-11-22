@@ -17,10 +17,15 @@
       <file leaf-file-name="PredictingDrugResponse.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="359">
-              <caret line="359" column="20" lean-forward="true" selection-start-line="359" selection-start-column="20" selection-end-line="359" selection-end-column="20" />
+            <state relative-caret-position="17023">
+              <caret line="636" column="51" lean-forward="true" selection-start-line="636" selection-start-column="51" selection-end-line="636" selection-end-column="51" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
+                <element signature="e#6408#6563#0" expanded="false" />
+                <element signature="e#6601#6749#0" expanded="false" />
+                <element signature="e#8389#9392#0" expanded="false" />
+                <element signature="e#18022#18145#0" expanded="false" />
+                <element signature="e#18192#18339#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -29,8 +34,8 @@
       <file leaf-file-name="PrimarySiteClassif.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="305">
-              <caret line="491" column="37" lean-forward="true" selection-start-line="491" selection-start-column="37" selection-end-line="491" selection-end-column="37" />
+            <state relative-caret-position="8874">
+              <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
               <folding>
                 <element signature="e#0#19#0" expanded="true" />
               </folding>
@@ -43,6 +48,19 @@
   <component name="FindInProjectRecents">
     <findStrings>
       <find>auc</find>
+      <find>0.0</find>
+      <find>merge</find>
+      <find>mer</find>
+      <find>drop</find>
+      <find>createWESDataFrame</find>
+      <find>addMutationCounter</find>
+      <find>smoteTomek</find>
+      <find>logging</find>
+      <find>cellLine</find>
+      <find>linewidth</find>
+      <find>saveName</find>
+      <find>LN</find>
+      <find>createRea</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -63,7 +81,7 @@
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1">
+    <navigator proportions="" version="1">
       <flattenPackages />
       <showMembers />
       <showModules />
@@ -76,14 +94,11 @@
       <manualOrder />
       <foldersAlwaysOnTop value="true" />
     </navigator>
-    <panes>
-      <pane id="ProjectPane" />
-      <pane id="Scope" />
-      <pane id="Scratches" />
-    </panes>
+    <panes />
   </component>
   <component name="PropertiesComponent">
     <property name="last_opened_file_path" value="$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py" />
+    <property name="settings.editor.selected.configurable" value="preferences.lookFeel" />
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -140,14 +155,14 @@
     <layout>
       <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25705075" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.23529412" sideWeight="0.5032232" order="7" side_tool="true" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.28200692" sideWeight="0.4967768" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Python Console" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.31920415" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Data View" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -162,7 +177,9 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager />
+    <breakpoint-manager>
+      <option name="time" value="4" />
+    </breakpoint-manager>
     <watches-manager />
   </component>
   <component name="editorHistoryManager">
@@ -172,6 +189,486 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8874">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8874">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8874">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8874">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="9309">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8874">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="9309">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="9309">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8874">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="8874">
+          <caret line="321" column="4" lean-forward="true" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="261">
+          <caret line="9" column="36" lean-forward="false" selection-start-line="9" selection-start-column="36" selection-end-line="9" selection-end-column="52" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="261">
+          <caret line="9" column="36" lean-forward="false" selection-start-line="9" selection-start-column="36" selection-end-line="9" selection-end-column="52" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="261">
+          <caret line="9" column="36" lean-forward="false" selection-start-line="9" selection-start-column="36" selection-end-line="9" selection-end-column="52" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="261">
+          <caret line="9" column="36" lean-forward="false" selection-start-line="9" selection-start-column="36" selection-end-line="9" selection-end-column="52" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="261">
+          <caret line="9" column="36" lean-forward="false" selection-start-line="9" selection-start-column="36" selection-end-line="9" selection-end-column="52" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="13804">
+          <caret line="491" column="37" lean-forward="false" selection-start-line="491" selection-start-column="37" selection-end-line="491" selection-end-column="37" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="13804">
+          <caret line="491" column="37" lean-forward="false" selection-start-line="491" selection-start-column="37" selection-end-line="491" selection-end-column="37" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="13804">
+          <caret line="491" column="37" lean-forward="false" selection-start-line="491" selection-start-column="37" selection-end-line="491" selection-end-column="37" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="13804">
+          <caret line="491" column="37" lean-forward="true" selection-start-line="491" selection-start-column="37" selection-end-line="491" selection-end-column="37" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -192,14 +689,33 @@
           <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Program Files/Python/Lib/site-packages/sklearn/metrics/ranking.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="510">
+          <caret line="544" column="42" lean-forward="true" selection-start-line="544" selection-start-column="42" selection-end-line="544" selection-end-column="42" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Program Files/Python/Lib/site-packages/imblearn/base.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-1106">
+          <caret line="99" column="53" lean-forward="true" selection-start-line="99" selection-start-column="53" selection-end-line="99" selection-end-column="53" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/../Assignment 1/PrimarySiteClassif.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="305">
-          <caret line="491" column="37" lean-forward="true" selection-start-line="491" selection-start-column="37" selection-end-line="491" selection-end-column="37" />
+        <state relative-caret-position="8874">
+          <caret line="321" column="4" lean-forward="false" selection-start-line="321" selection-start-column="4" selection-end-line="321" selection-end-column="94" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
           </folding>
@@ -208,10 +724,15 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/PredictingDrugResponse.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="359">
-          <caret line="359" column="20" lean-forward="true" selection-start-line="359" selection-start-column="20" selection-end-line="359" selection-end-column="20" />
+        <state relative-caret-position="17023">
+          <caret line="636" column="51" lean-forward="true" selection-start-line="636" selection-start-column="51" selection-end-line="636" selection-end-column="51" />
           <folding>
             <element signature="e#0#19#0" expanded="true" />
+            <element signature="e#6408#6563#0" expanded="false" />
+            <element signature="e#6601#6749#0" expanded="false" />
+            <element signature="e#8389#9392#0" expanded="false" />
+            <element signature="e#18022#18145#0" expanded="false" />
+            <element signature="e#18192#18339#0" expanded="false" />
           </folding>
         </state>
       </provider>

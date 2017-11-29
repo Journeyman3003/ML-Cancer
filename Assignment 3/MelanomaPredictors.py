@@ -1,6 +1,7 @@
 import pandas as pd
 import os
 import logging
+import pickle as pkl
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
@@ -216,35 +217,101 @@ def kFoldCrossValidation(X, y, k, algorithm):
 
 
 def evaluateModel(y_test, y_predict):
+    r2 = r2_score(y_test,y_predict)
+    mse = mean_squared_error(y_test, y_predict)
+
     print('### R2 Score: ###')
-    print(r2_score(y_test,y_predict))
+    print(r2)
 
     print('### MSE Score: ###')
-    print(mean_squared_error(y_test, y_predict))
+    print(mse)
+
+    return mse, r2
+
+
+def plotResults(results, save=False):
+
+    print(results)
+
+    ind = np.arange(2)
+    width = 0.35
+
+    #Task 1 and 2
+    for task, taskresults in results.items():
+        # r2 and mse
+        for score, scoreresults in taskresults.items():
+            fig = plt.figure()
+            ax = fig.add_subplot(111)
+            data = []
+            # imputed and NaN deleted
+            imputedresult = [list(i.values())[0] for i in scoreresults['imputed']]
+            nanresult = [list(i.values())[0] for i in scoreresults['NaN deleted']]
+
+            linresult = list(zip(nanresult, imputedresult))[0]
+            forestresult = list(zip(nanresult, imputedresult))[1]
+
+            ## the bars
+            rects1 = ax.bar(ind, linresult, width,
+                            color='black')
+
+            rects2 = ax.bar(ind + width, forestresult, width,
+                            color='green')
+
+            # axes and labels
+            ax.set_xlim(-width, len(ind) + width)
+            ax.set_ylabel(('R2-Score' if score == 'r2' else 'Mean Squared Error'))
+            ax.set_title("Predicting melanoma incident rates by income and sunlight" if task == 'Task_1' else
+                         "Predicting melanoma incident rates by income, sunlight\nand adjacent counties' incident rates")
+            xTickMarks = ['NaN deleted', 'mean imputed']
+            ax.set_xticks(ind + width/2)
+            xtickNames = ax.set_xticklabels(xTickMarks)
+            plt.setp(xtickNames, rotation=45, fontsize=10)
+            ax.axhline(y=0, color='black', ls='--', lw=0.7)
+
+            ax.legend((rects1[0], rects2[0]), ('Linear Regression', 'Random Forest Regression'))
+
+            if save:
+                plt.savefig(task + "_" + score + '.png', format='png', bbox_inches='tight', dpi=100)
+            plt.close()
+
+
+def writePythonObjectToFile(object, filename):
+    print('writing object to file...')
+    pkl.dump(object, open(filename + ".pkl", "wb"))
+    print('done writing to file...')
+
+
+def loadPythonObjectFromFile(filename):
+    print('loading object from file...')
+    object = pkl.load( open(filename + ".pkl", "rb"))
+    print('done loading from file...')
+    return object
 
 
 if __name__ == "__main__":
-    # base dataframe
-    melanomaData = loadMelanomaFrame()
-
-    #print(melanomaData['Age-Adjusted Incidence Rate'].unique())
-
-    # income data
-    incomeData = loadIncomeFrame()
-
-    # sunlight data
-    sunlightData = loadSunlinghtFrame(all=True)
-
-    # Task 2: county adjacency information
-    adjacencyData = loadCountyAdjacencyFrame(summarize=True)
-
-    adjacencyMelanomaData = createAdjacencyMelanomaFrame(melanomaFrame=melanomaData, adjacencyFrame=adjacencyData,
-                                                         imputeStrategy='mean')
-    print(adjacencyMelanomaData.shape)
-
-
-
+    # # base dataframe
+    # melanomaData = loadMelanomaFrame()
+    #
+    # # income data
+    # incomeData = loadIncomeFrame()
+    #
+    # # sunlight data
+    # sunlightData = loadSunlinghtFrame(all=True)
+    #
+    # # Task 2: county adjacency information
+    # adjacencyData = loadCountyAdjacencyFrame(summarize=True)
+    #
+    # adjacencyMelanomaData = createAdjacencyMelanomaFrame(melanomaFrame=melanomaData, adjacencyFrame=adjacencyData,
+    #                                                      imputeStrategy='mean')
+    # "empty" result dict
+    # results = {'Task_1': {'mse': {'imputed': [], 'NaN deleted': []}, 'r2': {'imputed': [], 'NaN deleted': []}},
+    #            'Task_2': {'mse': {'imputed': [], 'NaN deleted': []}, 'r2': {'imputed': [], 'NaN deleted': []}}}
+    #
     # # Task 1
+    #
+    # # Linear Regression
+    # # don't impute missing values
+    #
     # X, y = createFeatureAndLabelArrays(melanomaFrame=melanomaData, incomeFrame=incomeData, sunlightFrame=sunlightData,
     #                                    imputeStrategy=None, summarize=True)
     #
@@ -252,53 +319,115 @@ if __name__ == "__main__":
     #
     # y_test, y_predict = kFoldCrossValidation(X, y, 5, LinearRegr)
     #
-    # y_predict = list(map(lambda x: round(x, 2), y_predict))
+    # mse, r2 = evaluateModel(y_test=y_test, y_predict=y_predict)
     #
-    # print(y_test)
-    # print(y_predict)
+    # results['Task_1']['mse']['NaN deleted'].append({'Linear Regression': mse})
+    # results['Task_1']['r2']['NaN deleted'].append({'Linear Regression': r2})
     #
-    # evaluateModel(y_test=y_test, y_predict=y_predict)
+    # # impute missing values with mean
     #
+    # X, y = createFeatureAndLabelArrays(melanomaFrame=melanomaData, incomeFrame=incomeData, sunlightFrame=sunlightData,
+    #                                    imputeStrategy='mean', summarize=True)
     #
-    # Task 2
+    # # 5-fold cross validation
+    #
+    # y_test, y_predict = kFoldCrossValidation(X, y, 5, LinearRegr)
+    #
+    # mse, r2 = evaluateModel(y_test=y_test, y_predict=y_predict)
+    #
+    # results['Task_1']['mse']['imputed'].append({'Linear Regression': mse})
+    # results['Task_1']['r2']['imputed'].append({'Linear Regression': r2})
+    #
+    # # Random Forest Regression
+    # # don't impute missing values
+    #
+    # X, y = createFeatureAndLabelArrays(melanomaFrame=melanomaData, incomeFrame=incomeData, sunlightFrame=sunlightData,
+    #                                    imputeStrategy=None, summarize=True)
+    #
+    # # 5-fold cross validation
+    #
+    # y_test, y_predict = kFoldCrossValidation(X, y, 5, RandomForestRegr)
+    #
+    # mse, r2 = evaluateModel(y_test=y_test, y_predict=y_predict)
+    #
+    # results['Task_1']['mse']['NaN deleted'].append({'RF Regression': mse})
+    # results['Task_1']['r2']['NaN deleted'].append({'RF Regression': r2})
+    #
+    # # impute missing values with mean
+    #
+    # X, y = createFeatureAndLabelArrays(melanomaFrame=melanomaData, incomeFrame=incomeData, sunlightFrame=sunlightData,
+    #                                    imputeStrategy='mean', summarize=True)
+    #
+    # # 5-fold cross validation
+    #
+    # y_test, y_predict = kFoldCrossValidation(X, y, 5, RandomForestRegr)
+    #
+    # mse, r2 = evaluateModel(y_test=y_test, y_predict=y_predict)
+    #
+    # results['Task_1']['mse']['imputed'].append({'RF Regression': mse})
+    # results['Task_1']['r2']['imputed'].append({'RF Regression': r2})
+    #
+    # # Task 2
+    # # Linear Regression
+    # # don't impute missing values
+    #
+    # X, y = createFeatureAndLabelArrays(melanomaFrame=melanomaData, incomeFrame=incomeData, sunlightFrame=sunlightData,
+    #                                    adjacencyFrame=adjacencyMelanomaData, imputeStrategy=None, summarize=True)
+    #
+    # # 5-fold cross validation
+    #
+    # y_test, y_predict = kFoldCrossValidation(X, y, 5, LinearRegr)
+    #
+    # mse, r2 = evaluateModel(y_test=y_test, y_predict=y_predict)
+    #
+    # results['Task_2']['mse']['NaN deleted'].append({'Linear Regression': mse})
+    # results['Task_2']['r2']['NaN deleted'].append({'Linear Regression': r2})
+    #
+    # # impute missing values with mean
+    # X, y = createFeatureAndLabelArrays(melanomaFrame=melanomaData, incomeFrame=incomeData, sunlightFrame=sunlightData,
+    #                                    adjacencyFrame=adjacencyMelanomaData, imputeStrategy='mean', summarize=True)
+    #
+    # # 5-fold cross validation
+    #
+    # y_test, y_predict = kFoldCrossValidation(X, y, 5, LinearRegr)
+    #
+    # mse, r2 = evaluateModel(y_test=y_test, y_predict=y_predict)
+    #
+    # results['Task_2']['mse']['imputed'].append({'Linear Regression': mse})
+    # results['Task_2']['r2']['imputed'].append({'Linear Regression': r2})
+    #
+    # # Random Forest Regression
+    # # don't impute missing values
+    #
+    # X, y = createFeatureAndLabelArrays(melanomaFrame=melanomaData, incomeFrame=incomeData, sunlightFrame=sunlightData,
+    #                                    adjacencyFrame=adjacencyMelanomaData, imputeStrategy=None, summarize=True)
+    #
+    # # 5-fold cross validation
+    #
+    # y_test, y_predict = kFoldCrossValidation(X, y, 5, RandomForestRegr)
+    #
+    # mse, r2 = evaluateModel(y_test=y_test, y_predict=y_predict)
+    #
+    # results['Task_2']['mse']['NaN deleted'].append({'RF Regression': mse})
+    # results['Task_2']['r2']['NaN deleted'].append({'RF Regression': r2})
+    #
+    # # impute missing values with mean
+    # X, y = createFeatureAndLabelArrays(melanomaFrame=melanomaData, incomeFrame=incomeData, sunlightFrame=sunlightData,
+    #                                    adjacencyFrame=adjacencyMelanomaData, imputeStrategy='mean', summarize=True)
+    #
+    # # 5-fold cross validation
+    #
+    # y_test, y_predict = kFoldCrossValidation(X, y, 5, RandomForestRegr)
+    #
+    # mse, r2 = evaluateModel(y_test=y_test, y_predict=y_predict)
+    #
+    # results['Task_2']['mse']['imputed'].append({'RF Regression': mse})
+    # results['Task_2']['r2']['imputed'].append({'RF Regression': r2})
+    #
+    # writePythonObjectToFile(results, 'results')
 
-    X, y = createFeatureAndLabelArrays(melanomaFrame=melanomaData, incomeFrame=incomeData, sunlightFrame=sunlightData,
-                                       adjacencyFrame=adjacencyMelanomaData, imputeStrategy='mean', summarize=True)
+    results = loadPythonObjectFromFile('results')
 
-    # 5-fold cross validation
+    plotResults(results, save=True)
 
-    y_test, y_predict = kFoldCrossValidation(X, y, 5, LinearRegr)
-
-    #y_predict = list(map(lambda x: round(x, 2), y_predict))
-
-    print(y_test)
-    print(y_predict)
-
-    evaluateModel(y_test=y_test, y_predict=y_predict)
-    #
-    # melanomaFrame = loadFileToDf('melanoma-v08.txt', separator='\t')
-    # summarizeDF(melanomaFrame)
-    #
-    # melanomaFrame = melanomaFrame[['County', ' FIPS', 'Age-Adjusted Incidence Rate']]
-    # summarizeDF(melanomaFrame)
-
-    #incomeFrame = loadFileToDf('median_income.csv', skip=6, nrows=3142)
-    #summarizeDF(incomeFrame)
-
-    # print(incomeFrame['County'].unique())
-    #
-    # 1979-2011
-    # sunlightFrame1 = loadFileToDf('NLDAS_Daily_Sunlight_1979-2011.txt', separator='\t', nrows=3111, encoding='iso-8859-1')
-    # sunlightFrame1.rename(columns={'Avg Daily Sunlight (KJ/m²)': 'Avg Daily Sunlight'}, inplace=True)
-    # sunlightFrame1 = sunlightFrame1[['County', 'County Code', 'Avg Daily Sunlight', 'Min Daily Sunlight', 'Max Daily Sunlight']]
-    # # 2000-2011
-    # sunlightFrame2 = loadFileToDf('NLDAS_Daily_Sunlight_2000-2011.txt', separator='\t', nrows=3111, encoding='iso-8859-1')
-    #
-    # summarizeDF(sunlightFrame1)
-    #
-    #
-    # # the space though...
-    # merge = mergeDataFrames(' FIPS', melanomaFrame, (incomeFrame,' FIPS'), (sunlightFrame1,'County Code'))
-    #
-    # summarizeDF(merge)
 

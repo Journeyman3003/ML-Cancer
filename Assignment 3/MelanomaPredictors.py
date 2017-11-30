@@ -14,7 +14,7 @@ import numpy as np
 # regression metrics
 from sklearn.metrics import r2_score, mean_squared_error
 
-# directory where to find data
+# directory where to find data files
 dataPath = 'data'
 
 
@@ -65,7 +65,7 @@ def loadSunlinghtFrame(all=True, summarize=False):
         sunlightFrame = loadFileToDf('NLDAS_Daily_Sunlight_2000-2011.txt', separator='\t', nrows=3111,
                                      encoding='iso-8859-1')
     sunlightFrame.rename(columns={'Avg Daily Sunlight (KJ/m²)': 'Avg Daily Sunlight'}, inplace=True)
-    sunlightFrame = sunlightFrame[['County Code', 'Avg Daily Sunlight']]##, 'Min Daily Sunlight', 'Max Daily Sunlight']]
+    sunlightFrame = sunlightFrame[['County Code', 'Avg Daily Sunlight']]  # , 'Min Daily Sunlight', 'Max Daily Sunlight']]
 
     if summarize:
         summarizeDF(sunlightFrame)
@@ -87,6 +87,9 @@ def loadCountyAdjacencyFrame(summarize=False):
     # df = df[['base_FIPS', 'adj_FIPS']]
     df = df.fillna(method='ffill')
     df['base_FIPS'] = df['base_FIPS'].astype(int)
+
+    # delete the base county from its neighbors
+    df.drop(df[df['base_FIPS'] == df['adj_FIPS']].index, inplace=True)
 
     if summarize:
         summarizeDF(df)
@@ -265,7 +268,7 @@ def plotResults(results, save=False):
             xTickMarks = ['NaN deleted', 'mean imputed']
             ax.set_xticks(ind + width/2)
             xtickNames = ax.set_xticklabels(xTickMarks)
-            plt.setp(xtickNames, rotation=45, fontsize=10)
+            plt.setp(xtickNames, rotation=0, fontsize=10)
             ax.axhline(y=0, color='black', ls='--', lw=0.7)
 
             ax.legend((rects1[0], rects2[0]), ('Linear Regression', 'Random Forest Regression'))
@@ -289,6 +292,9 @@ def loadPythonObjectFromFile(filename):
 
 
 if __name__ == "__main__":
+    """
+    uncomment the following lines to run the classifiers
+    """
     # # base dataframe
     # melanomaData = loadMelanomaFrame()
     #
@@ -426,6 +432,10 @@ if __name__ == "__main__":
     #
     # writePythonObjectToFile(results, 'results')
 
+    """
+    or just run these two lines if the 'result.pkl' file was already generated to generate plots 
+    (also included in supplementary files)
+    """
     results = loadPythonObjectFromFile('results')
 
     plotResults(results, save=True)

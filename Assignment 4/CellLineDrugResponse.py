@@ -5,8 +5,12 @@ from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import KFold
 
-from statsmodels.imputation.mice import MICE
+from sklearn.preprocessing import Imputer
 
+from statsmodels.imputation.mice import MICEData, MICE
+import statsmodels.api as sm
+
+# regression metrics
 from sklearn.metrics import r2_score, mean_squared_error
 
 import matplotlib.pyplot as plt
@@ -23,12 +27,16 @@ drugData = 'GDSC-drug-descriptors-and-fingerprints'
 
 
 def summarizeDF(df):
-    #print(df)
+    print(df)
     print(df.info())
     #print(df.describe())
 
 
 ### DATAFRAME OPERATIONS
+
+def writeDFtoCSV(dataFrame, filename):
+    dataFrame.to_csv(filename, sep=',', encoding='utf-8')
+
 
 def loadFileToDf(fileName, directories, separator=',', skip=None, nrows=None, header=0, encoding=None, na=None,
                  coltypes=None):
@@ -134,16 +142,96 @@ def selectBestFeatures(X, y, nFeatures):
     print('Choosing best', nFeatures, 'features out of the given ones...')
     return SelectKBest(f_regression, k=nFeatures).fit_transform(X, y)
 
+
+### RANDOM FOREST IMPUTATION FOR MISSING DATA
+
+def randomForestImputation(dataframe, na_threshold=2):
+
+    dataframe = dataframe.loc[:, dataframe.isnull().sum() < dataframe.shape[0] / na_threshold]
+    # drop 'NAME' column
+    temp = dataframe.drop('NAME', axis=1)
+    for column in list(temp):
+        featureFrame = temp.drop(column, axis=1)
+        targetCol = temp[column]
+
+        nullBoolean = targetCol.isnull().values
+        y_test_indexes = targetCol.index[nullBoolean]
+
+        # quick and dirty mean impute the feature frame...
+        featureFrame = meanImputation(featureFrame)
+
+
+        X_train = np.array(featureFrame[list(map(lambda x: not x, nullBoolean))])
+        y_train = np.array(targetCol[list(map(lambda x: not x, nullBoolean))])
+        # determine most influential 5 features
+        X_train = selectBestFeatures(X_train, y_train, 5)
+
+        X_test = selectBestFeatures(X_train, y_train, 5) # np.array(featureFrame[nullBoolean])
+
+        print('#########')
+        print(y_test_indexes)
+        forest = RandomForestRegr(X_train, y_train)
+        pred = forest.predict(X_test)
+        for i, missingindex in enumerate(y_test_indexes):
+            print('predicted value for column', column, 'and row', missingindex, 'is', pred[i])
+            dataframe.at[missingindex, column] = pred[i]
+
+    return dataframe
+
+
 ### PREDICTIVE MEAN MATCHING FOR MISSING DATA/FEATURES
 
-def predictiveMeanMatching(dataframe):
-    # first, find no-nan columns
+def predictiveMeanMatching(dataframe, na_threshold):
 
-    # second, determine the 4 most influential regressors among them
+    dataframe = dataframe.loc[:, dataframe.isnull().sum() < dataframe.shape[0]/na_threshold]
+    dataframe.columns = map(lambda x: 'c' + str(x), range(dataframe.shape[1]))
+    dataframe.rename(columns={'c0': 'NAME'})
+    # drop 'NAME' column
+    temp = dataframe.drop('NAME', axis=1)
+    for column in list(temp):
+        featureFrame = temp.drop(column, axis=1)
+        targetCol = temp[column]
 
-    # third, MICE
+        #noNaNCols = dataframe.dropna(axis=1, how='any')
+
+        # NaNCols = dataframe.loc[:, df.isnull().any()]
+
+        # second, determine the 4 most influential regressors among them
+
+        # third, MICE
+
+        imp = MICEData(dataframe)
+        #print(imp)
+        fml = 'c1 ~ c2'
+        mice = MICE(fml, sm.OLS, imp)
+        results = mice.fit(5, 5)
+        print(results.summary())
+        # results.
 
 
+def meanImputation(dataframe):
+    """
+    plain mean imputation
+    :param dataframe:
+    :return:
+    """
+    imp = Imputer(strategy='mean', axis=1)
+    temp = pd.DataFrame(imp.fit_transform(dataframe))
+    # imp = imp.fit(dataframe)
+    # temp = imp.transform(dataframe)
+    temp.columns = dataframe.columns
+    temp.index = dataframe.index
+    #dataframe.fillna(dataframe.mean())
+
+    return temp
+
+def findBestPredictorCols(dataframe, targetCol, nPredictors):
+
+    X = dataframe.drop(targetCol, axis=1)
+    y = dataframe[targetCol]
+    selectKBest = selectBestFeatures(X,y, nPredictors)
+    mask = selectKBest.get_support()
+    print(mask)
 
 ### PER CELL LINE MODEL
 
@@ -174,13 +262,9 @@ def kFoldCrossValidation(X, y, k):
         X_train, X_test = X[train_index], X[test_index]
         y_train, y_test = y[train_index], y[test_index]
 
-
         forest = RandomForestRegr(X_train, y_train)
         print('done building forest')
         y_predict = forest.predict(X_test)
-
-        # print('labels:', y_test.shape[0], '\n', y_test)
-        # print('predicted labels:', y_test.shape[0], '\n', y_predict)
 
         y_testList.extend(y_test)
         y_predictList.extend(y_predict)
@@ -188,9 +272,34 @@ def kFoldCrossValidation(X, y, k):
     return y_testList, y_predictList
 
 
-def predictDrugPerformance(df, nCellLines):
-    None
+def createFeatureAndTargetArrays(dataframe, targetCol):
 
+    X = np.array(dataframe.drop(targetCol, axis=1))
+    y = np.array(dataframe[targetCol])
+
+    return X, y
+
+
+def predictDrugPerformance(df, nFeatures=30):
+    """
+
+    :param df: imputed and already filtered for a particular cell line, holds all features to use
+    :param nFeatures:
+    :return:
+    """
+
+    X, y = createFeatureAndTargetArrays(df, 'GROWTH')
+
+    # select only best features to use
+    X_best = selectBestFeatures(X, y, nFeatures)
+
+    # five-fold cross-validation
+    y_test, y_predict = kFoldCrossValidation(X_best, y, 5)
+
+    return y_test, y_predict,
+
+
+# def run(multiConcentration=False, save=False)
 
 
 
@@ -214,24 +323,104 @@ GDSC by-cell Line Drug prediction
 """
 
 if __name__ == '__main__':
-    df = loadDoseResponseFitted()
-    summarizeDF(df)
+    doseResponseFitted = loadDoseResponseFitted()
+    summarizeDF(doseResponseFitted)
 
-    df2 = loadDrugDescriptors()
-    summarizeDF(df2)
+    drugDescriptors = loadDrugDescriptors()
+    summarizeDF(drugDescriptors)
 
-    df3 = loadECPF1024()
-    summarizeDF(df3)
+    # dfdescriptors = randomForestImputation(drugDescriptors,2)
+    # writeDFtoCSV(dfdescriptors, 'randomForestImputedDescriptors.csv')
+    #
+    # # predictiveMeanMatching(df2, na_threshold=2)
+    ECPF1024 = loadECPF1024()
+    summarizeDF(ECPF1024)
+    #    #
+    # # merge = mergeDataFrames(doseResponseFitted, 'NSC',(drugDescriptors, 'NAME'),(ECPF1024, 'DRUG'))
+    # # summarizeDF(merge)
+    #
+    PFP1024 = loadPFP1024()
+    summarizeDF(PFP1024)
+    #
+    # doseResponseMulti = loadDoseResponseMultipleDoses()
+    # summarizeDF(doseResponseMulti)
 
-    df = filterDataFrame(df, 'CELLNAME', 683665)
-    summarizeDF(df)
+    ### IMPUTED DESCRIPTORS
 
-    df123 = mergeDataFrames(df, 'NSC',(df2, 'NAME'),(df3, 'DRUG'))
-    summarizeDF(df123)
+    # mean
+    meanImputedDescriptors = meanImputation(drugDescriptors)
 
-    df4 = loadPFP1024()
-    summarizeDF(df4)
+    # random forest
+    # forestImputedDescriptors = randomForestImputation(drugDescriptors, 2)
+    forestImputedDescriptors = loadFileToDf('randomForestImputedDescriptors.csv', '', separator=',')
 
-    df5 = loadDoseResponseMultipleDoses()
-    summarizeDF(df5)
+    """
+    ### DEFAULT MODEL:
+    """
+
+    # just descriptors as features
+    cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', 683665)
+    merge = mergeDataFrames(cell683665, 'NSC', (meanImputedDescriptors, 'NAME'))
+    print(merge.shape)
+    merge.drop(['NSC', 'NAME', 'CELLNAME'], axis=1, inplace=True)
+    for i in [1,10,100,1000]:
+        y_test, y_predict = predictDrugPerformance(merge, i)
+        r2 = r2_score(y_test,y_predict)
+        mse = mean_squared_error(y_test,y_predict)
+        print(i, 'FEATURES:\nR2:', r2, 'MSE:',mse)
+
+    # just Fingerprint information - ECPF
+    # cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', 683665)
+    # merge = mergeDataFrames(cell683665, 'NSC', (ECPF1024, 'DRUG'))
+    # print(merge.shape)
+    # merge.drop(['NSC', 'DRUG', 'CELLNAME'], axis=1, inplace=True)
+    # for i in [1, 10, 100, 1000]:
+    #     y_test, y_predict = predictDrugPerformance(merge, i)
+    #     r2 = r2_score(y_test, y_predict)
+    #     mse = mean_squared_error(y_test, y_predict)
+    #     print(i, 'FEATURES:\nR2:', r2, 'MSE:', mse)
+
+    # just Fingerprint information - PFP
+    # cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', 683665)
+    # merge = mergeDataFrames(cell683665, 'NSC', (PFP1024, 'DRUG'))
+    # print(merge.shape)
+    # merge.drop(['NSC', 'DRUG', 'CELLNAME'], axis=1, inplace=True)
+    # for i in [1, 10, 100, 1000]:
+    #     y_test, y_predict = predictDrugPerformance(merge, i)
+    #     r2 = r2_score(y_test, y_predict)
+    #     mse = mean_squared_error(y_test, y_predict)
+    #     print(i, 'FEATURES:\nR2:', r2, 'MSE:', mse)
+
+    # ALL OF IT
+    # cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', 683665)
+    # merge = mergeDataFrames(cell683665, 'NSC', (meanImputedDescriptors, 'NAME'), (ECPF1024, 'DRUG'),(PFP1024, 'DRUG'))
+    # print(merge.shape)
+    # merge.drop(['NSC', 'DRUG_x', 'DRUG_y', 'NAME', 'CELLNAME'], axis=1, inplace=True)
+    # for i in [1, 10, 100, 1000]:
+    #     y_test, y_predict = predictDrugPerformance(merge, i)
+    #     r2 = r2_score(y_test, y_predict)
+    #     mse = mean_squared_error(y_test, y_predict)
+    #     print(i, 'FEATURES:\nR2:', r2, 'MSE:', mse)
+
+    """
+    ### FOREST IMPUTED:
+    """
+
+    # just descriptors as features
+    cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', 683665)
+    merge = mergeDataFrames(cell683665, 'NSC', (forestImputedDescriptors, 'NAME'))
+    print(merge.shape)
+    merge.drop(['NSC', 'NAME', 'CELLNAME'], axis=1, inplace=True)
+    for i in [1,10,100,1000]:
+        y_test, y_predict = predictDrugPerformance(merge, i)
+        r2 = r2_score(y_test,y_predict)
+        mse = mean_squared_error(y_test,y_predict)
+        print(i, 'FEATURES:\nR2:', r2, 'MSE:',mse)
+
+
+
+
+
+
+
 

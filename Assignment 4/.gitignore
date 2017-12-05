@@ -1,3 +1,9 @@
 # data files
 /MLiC-Lab4/
 
+# pkl files
+*.pkl
+
+#images
+*.png
+

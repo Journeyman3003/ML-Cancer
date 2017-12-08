@@ -5,7 +5,7 @@ from sklearn.feature_selection import SelectKBest, f_regression
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import KFold
 
-from sklearn.preprocessing import Imputer, MinMaxScaler
+from sklearn.preprocessing import Imputer
 
 from statsmodels.imputation.mice import MICEData, MICE
 import statsmodels.api as sm
@@ -149,7 +149,6 @@ def selectBestFeatures(X, y, nFeatures, transform=True):
         return SelectKBest(f_regression, k=nFeatures).fit_transform(X, y)
     else:
         return SelectKBest(f_regression, k=nFeatures).fit(X, y)
-
 
 
 ### RANDOM FOREST IMPUTATION FOR MISSING DATA
@@ -362,9 +361,6 @@ def createCellLineResponseDict(drugResponseData, *featureDataframesAndMergeCols,
         # drop all merge columns (all possible ones that could be still in the merge, ignore errors)
         merge.drop(['NSC', 'DRUG', 'DRUG_x', 'DRUG_y', 'NAME'], axis=1, errors='ignore', inplace=True)
 
-
-        #summarizeDF(merge)
-
         # predict all (5 fold cross validation)
         y_test, y_predict = predictDrugPerformance(merge, nFeatures)
 
@@ -519,15 +515,8 @@ if __name__ == '__main__':
     drugDescriptors = loadDrugDescriptors()
     summarizeDF(drugDescriptors)
 
-    # dfdescriptors = randomForestImputation(drugDescriptors,2)
-    # writeDFtoCSV(dfdescriptors, 'randomForestImputedDescriptors.csv')
-    #
-    # # predictiveMeanMatching(df2, na_threshold=2)
     ECPF1024 = loadECPF1024()
     summarizeDF(ECPF1024)
-    #    #
-    # # merge = mergeDataFrames(doseResponseFitted, 'NSC',(drugDescriptors, 'NAME'),(ECPF1024, 'DRUG'))
-    # # summarizeDF(merge)
     #
     PFP1024 = loadPFP1024()
     summarizeDF(PFP1024)
@@ -557,194 +546,194 @@ if __name__ == '__main__':
     ### DEFAULT MODEL:
     ### determine number of features to use
     """
-    # featuresToTest = [1,10,100,1000]
-    # r2_scores = {}
-    # mse_values = {}
-    #
-    # cellsToTest = [683665, 909774, 949160, 749716, 1240210]
-    #
-    # for cell in cellsToTest:
-    #     # just descriptors as features
-    #     r2_scores['only drug descriptors'] = {}
-    #     r2_scores['only drug descriptors']['x'] = featuresToTest
-    #     r2_scores['only drug descriptors']['y'] = []
-    #
-    #     mse_values['only drug descriptors'] = {}
-    #     mse_values['only drug descriptors']['x'] = featuresToTest
-    #     mse_values['only drug descriptors']['y'] = []
-    #
-    #     cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cell)
-    #     merge = mergeDataFrames(cell683665, 'NSC', (meanImputedDescriptors, 'NAME'))
-    #     print(merge.shape)
-    #     merge.drop(['NSC', 'NAME', 'CELLNAME'], axis=1, inplace=True)
-    #     for i in featuresToTest:
-    #         y_test, y_predict = predictDrugPerformance(merge, i)
-    #         r2 = r2_score(y_test,y_predict)
-    #         mse = mean_squared_error(y_test,y_predict)
-    #         r2_scores['only drug descriptors']['y'].append(r2)
-    #         mse_values['only drug descriptors']['y'].append(mse)
-    #         print(i, 'FEATURES:\nR2:', r2, 'MSE:',mse)
-    #
-    #     # just Fingerprint information - ECPF
-    #
-    #     r2_scores['only ECPF'] = {}
-    #     r2_scores['only ECPF']['x'] = featuresToTest
-    #     r2_scores['only ECPF']['y'] = []
-    #
-    #     mse_values['only ECPF'] = {}
-    #     mse_values['only ECPF']['x'] = featuresToTest
-    #     mse_values['only ECPF']['y'] = []
-    #
-    #     cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cell)
-    #     merge = mergeDataFrames(cell683665, 'NSC', (ECPF1024, 'DRUG'))
-    #     print(merge.shape)
-    #     merge.drop(['NSC', 'DRUG', 'CELLNAME'], axis=1, inplace=True)
-    #     for i in featuresToTest:
-    #         y_test, y_predict = predictDrugPerformance(merge, i)
-    #         r2 = r2_score(y_test, y_predict)
-    #         mse = mean_squared_error(y_test, y_predict)
-    #
-    #         r2_scores['only ECPF']['y'].append(r2)
-    #         mse_values['only ECPF']['y'].append(mse)
-    #         print(i, 'FEATURES:\nR2:', r2, 'MSE:', mse)
-    #
-    #
-    #     # just Fingerprint information - PFP
-    #
-    #     r2_scores['only PFP'] = {}
-    #     r2_scores['only PFP']['x'] = featuresToTest
-    #     r2_scores['only PFP']['y'] = []
-    #
-    #     mse_values['only PFP'] = {}
-    #     mse_values['only PFP']['x'] = featuresToTest
-    #     mse_values['only PFP']['y'] = []
-    #
-    #     cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cell)
-    #     merge = mergeDataFrames(cell683665, 'NSC', (PFP1024, 'DRUG'))
-    #     print(merge.shape)
-    #     merge.drop(['NSC', 'DRUG', 'CELLNAME'], axis=1, inplace=True)
-    #     for i in featuresToTest:
-    #         y_test, y_predict = predictDrugPerformance(merge, i)
-    #         r2 = r2_score(y_test, y_predict)
-    #         mse = mean_squared_error(y_test, y_predict)
-    #
-    #         r2_scores['only PFP']['y'].append(r2)
-    #         mse_values['only PFP']['y'].append(mse)
-    #
-    #         print(i, 'FEATURES:\nR2:', r2, 'MSE:', mse)
-    #
-    #     # ALL OF IT
-    #
-    #     r2_scores['all combined'] = {}
-    #     r2_scores['all combined']['x'] = featuresToTest
-    #     r2_scores['all combined']['y'] = []
-    #
-    #     mse_values['all combined'] = {}
-    #     mse_values['all combined']['x'] = featuresToTest
-    #     mse_values['all combined']['y'] = []
-    #
-    #     cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cell)
-    #     merge = mergeDataFrames(cell683665, 'NSC', (meanImputedDescriptors, 'NAME'), (ECPF1024, 'DRUG'),(PFP1024, 'DRUG'))
-    #     print(merge.shape)
-    #     merge.drop(['NSC', 'DRUG_x', 'DRUG_y', 'NAME', 'CELLNAME'], axis=1, inplace=True)
-    #     for i in featuresToTest:
-    #         y_test, y_predict = predictDrugPerformance(merge, i)
-    #         r2 = r2_score(y_test, y_predict)
-    #         mse = mean_squared_error(y_test, y_predict)
-    #
-    #         r2_scores['all combined']['y'].append(r2)
-    #         mse_values['all combined']['y'].append(mse)
-    #
-    #         print(i, 'FEATURES:\nR2:', r2, 'MSE:', mse)
-    #
-    #     writePythonObjectToFile(r2_scores, 'r2_based_feature_number_' + str(cell))
-    #     writePythonObjectToFile(mse_values, 'mse_based_feature_number_' + str(cell))
-    #
-    #     r2_scores = loadPythonObjectFromFile('r2_based_feature_number_' + str(cell))
-    #     mse_values = loadPythonObjectFromFile('mse_based_feature_number_' + str(cell))
-    #
-    #     evaluateParameterPerformance(r2_scores, xAxisLabel='number of features used', yAxisLabel='R2-Score',
-    #                                  saveName='optimalNumberOfFeaturesR2' + str(cell), plotTitle='Optimal number of features to use')
-    #     evaluateParameterPerformance(mse_values, xAxisLabel='number of features used', yAxisLabel='Mean Squared Error',
-    #                                  saveName='optimalNumberOfFeaturesMSE' + str(cell), plotTitle='Optimal number of features to use')
+    featuresToTest = [1,10,100,1000]
+    r2_scores = {}
+    mse_values = {}
+
+    cellsToTest = [683665, 909774, 949160, 749716, 1240210]
+
+    for cell in cellsToTest:
+        # just descriptors as features
+        r2_scores['only drug descriptors'] = {}
+        r2_scores['only drug descriptors']['x'] = featuresToTest
+        r2_scores['only drug descriptors']['y'] = []
+
+        mse_values['only drug descriptors'] = {}
+        mse_values['only drug descriptors']['x'] = featuresToTest
+        mse_values['only drug descriptors']['y'] = []
+
+        cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cell)
+        merge = mergeDataFrames(cell683665, 'NSC', (meanImputedDescriptors, 'NAME'))
+        print(merge.shape)
+        merge.drop(['NSC', 'NAME', 'CELLNAME'], axis=1, inplace=True)
+        for i in featuresToTest:
+            y_test, y_predict = predictDrugPerformance(merge, i)
+            r2 = r2_score(y_test,y_predict)
+            mse = mean_squared_error(y_test,y_predict)
+            r2_scores['only drug descriptors']['y'].append(r2)
+            mse_values['only drug descriptors']['y'].append(mse)
+            print(i, 'FEATURES:\nR2:', r2, 'MSE:',mse)
+
+        # just Fingerprint information - ECPF
+
+        r2_scores['only ECPF'] = {}
+        r2_scores['only ECPF']['x'] = featuresToTest
+        r2_scores['only ECPF']['y'] = []
+
+        mse_values['only ECPF'] = {}
+        mse_values['only ECPF']['x'] = featuresToTest
+        mse_values['only ECPF']['y'] = []
+
+        cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cell)
+        merge = mergeDataFrames(cell683665, 'NSC', (ECPF1024, 'DRUG'))
+        print(merge.shape)
+        merge.drop(['NSC', 'DRUG', 'CELLNAME'], axis=1, inplace=True)
+        for i in featuresToTest:
+            y_test, y_predict = predictDrugPerformance(merge, i)
+            r2 = r2_score(y_test, y_predict)
+            mse = mean_squared_error(y_test, y_predict)
+
+            r2_scores['only ECPF']['y'].append(r2)
+            mse_values['only ECPF']['y'].append(mse)
+            print(i, 'FEATURES:\nR2:', r2, 'MSE:', mse)
+
+
+        # just Fingerprint information - PFP
+
+        r2_scores['only PFP'] = {}
+        r2_scores['only PFP']['x'] = featuresToTest
+        r2_scores['only PFP']['y'] = []
+
+        mse_values['only PFP'] = {}
+        mse_values['only PFP']['x'] = featuresToTest
+        mse_values['only PFP']['y'] = []
+
+        cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cell)
+        merge = mergeDataFrames(cell683665, 'NSC', (PFP1024, 'DRUG'))
+        print(merge.shape)
+        merge.drop(['NSC', 'DRUG', 'CELLNAME'], axis=1, inplace=True)
+        for i in featuresToTest:
+            y_test, y_predict = predictDrugPerformance(merge, i)
+            r2 = r2_score(y_test, y_predict)
+            mse = mean_squared_error(y_test, y_predict)
+
+            r2_scores['only PFP']['y'].append(r2)
+            mse_values['only PFP']['y'].append(mse)
+
+            print(i, 'FEATURES:\nR2:', r2, 'MSE:', mse)
+
+        # ALL OF IT
+
+        r2_scores['all combined'] = {}
+        r2_scores['all combined']['x'] = featuresToTest
+        r2_scores['all combined']['y'] = []
+
+        mse_values['all combined'] = {}
+        mse_values['all combined']['x'] = featuresToTest
+        mse_values['all combined']['y'] = []
+
+        cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cell)
+        merge = mergeDataFrames(cell683665, 'NSC', (meanImputedDescriptors, 'NAME'), (ECPF1024, 'DRUG'),(PFP1024, 'DRUG'))
+        print(merge.shape)
+        merge.drop(['NSC', 'DRUG_x', 'DRUG_y', 'NAME', 'CELLNAME'], axis=1, inplace=True)
+        for i in featuresToTest:
+            y_test, y_predict = predictDrugPerformance(merge, i)
+            r2 = r2_score(y_test, y_predict)
+            mse = mean_squared_error(y_test, y_predict)
+
+            r2_scores['all combined']['y'].append(r2)
+            mse_values['all combined']['y'].append(mse)
+
+            print(i, 'FEATURES:\nR2:', r2, 'MSE:', mse)
+
+        writePythonObjectToFile(r2_scores, 'r2_based_feature_number_' + str(cell))
+        writePythonObjectToFile(mse_values, 'mse_based_feature_number_' + str(cell))
+
+        r2_scores = loadPythonObjectFromFile('r2_based_feature_number_' + str(cell))
+        mse_values = loadPythonObjectFromFile('mse_based_feature_number_' + str(cell))
+
+        evaluateParameterPerformance(r2_scores, xAxisLabel='number of features used', yAxisLabel='R2-Score',
+                                     saveName='optimalNumberOfFeaturesR2' + str(cell), plotTitle='Optimal number of features to use')
+        evaluateParameterPerformance(mse_values, xAxisLabel='number of features used', yAxisLabel='Mean Squared Error',
+                                     saveName='optimalNumberOfFeaturesMSE' + str(cell), plotTitle='Optimal number of features to use')
 
     """
     ### FOREST IMPUTED:
     """
 
-    # r2_scores = {}
-    # mse_values = {}
-    # cellsToTest = [683665, 909774, 949160, 749716, 1240210]
-    # # just descriptors as features
-    #
-    # for cellLine in cellsToTest:
-    #     # just mean imputed descriptors as features
-    #     cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cellLine)
-    #     merge = mergeDataFrames(cell683665, 'NSC', (meanImputedDescriptors, 'NAME'))
-    #     print(merge.shape)
-    #     merge.drop(['NSC', 'NAME', 'CELLNAME'], axis=1, inplace=True)
-    #
-    #     y_test, y_predict = predictDrugPerformance(merge, 100)
-    #     r2 = r2_score(y_test, y_predict)
-    #     mse = mean_squared_error(y_test, y_predict)
-    #     r2_scores['mean imputed'] = r2
-    #     mse_values['mean imputed'] = mse
-    #     print('\nR2:', r2, 'MSE:', mse)
-    #
-    #     # just rf imputed descriptors as features
-    #
-    #     cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cellLine)
-    #     merge = mergeDataFrames(cell683665, 'NSC', (forestImputedDescriptors, 'NAME'))
-    #     print(merge.shape)
-    #     merge.drop(['NSC', 'NAME', 'CELLNAME'], axis=1, inplace=True)
-    #
-    #     y_test, y_predict = predictDrugPerformance(merge, 100)
-    #     r2 = r2_score(y_test,y_predict)
-    #     mse = mean_squared_error(y_test,y_predict)
-    #     r2_scores['random forest imputed'] = r2
-    #     mse_values['random forest imputed'] = mse
-    #     print('\nR2:', r2, 'MSE:',mse)
-    #
-    #     evaluateParameterPerformance(r2_scores, xAxisLabel='different imputation metrics', yAxisLabel='R2-Score',
-    #                                  barplot=True, plotTitle='Comparison of imputation techniques',
-    #                                  saveName='imputationComparisonR2' + str(cellLine))
-    #
-    #     evaluateParameterPerformance(mse_values, xAxisLabel='different imputation metrics', yAxisLabel='Mean Squared Error',
-    #                                  barplot=True, plotTitle='Comparison of imputation techniques',
-    #                                  saveName='imputationComparisonMSE' + str(cellLine))
+    r2_scores = {}
+    mse_values = {}
+    cellsToTest = [683665, 909774, 949160, 749716, 1240210]
+    # just descriptors as features
+
+    for cellLine in cellsToTest:
+        # just mean imputed descriptors as features
+        cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cellLine)
+        merge = mergeDataFrames(cell683665, 'NSC', (meanImputedDescriptors, 'NAME'))
+        print(merge.shape)
+        merge.drop(['NSC', 'NAME', 'CELLNAME'], axis=1, inplace=True)
+
+        y_test, y_predict = predictDrugPerformance(merge, 100)
+        r2 = r2_score(y_test, y_predict)
+        mse = mean_squared_error(y_test, y_predict)
+        r2_scores['mean imputed'] = r2
+        mse_values['mean imputed'] = mse
+        print('\nR2:', r2, 'MSE:', mse)
+
+        # just rf imputed descriptors as features
+
+        cell683665 = filterDataFrame(doseResponseFitted, 'CELLNAME', cellLine)
+        merge = mergeDataFrames(cell683665, 'NSC', (forestImputedDescriptors, 'NAME'))
+        print(merge.shape)
+        merge.drop(['NSC', 'NAME', 'CELLNAME'], axis=1, inplace=True)
+
+        y_test, y_predict = predictDrugPerformance(merge, 100)
+        r2 = r2_score(y_test,y_predict)
+        mse = mean_squared_error(y_test,y_predict)
+        r2_scores['random forest imputed'] = r2
+        mse_values['random forest imputed'] = mse
+        print('\nR2:', r2, 'MSE:',mse)
+
+        evaluateParameterPerformance(r2_scores, xAxisLabel='different imputation metrics', yAxisLabel='R2-Score',
+                                     barplot=True, plotTitle='Comparison of imputation techniques',
+                                     saveName='imputationComparisonR2' + str(cellLine))
+
+        evaluateParameterPerformance(mse_values, xAxisLabel='different imputation metrics', yAxisLabel='Mean Squared Error',
+                                     barplot=True, plotTitle='Comparison of imputation techniques',
+                                     saveName='imputationComparisonMSE' + str(cellLine))
 
 
     """
     now, after params are determined: evaluate performance on several cell Line models
     """
 
-    # dictT = loadPythonObjectFromFile('cellLineDict_100cells_PFPonly_multiple')
-    #
-    # lineList = list(dictT.keys())
-    # lineList = lineList[:80]
-    #
-    # writePythonObjectToFile(lineList,'100CellLines')
-    #
-    # cellLinesList = loadPythonObjectFromFile('100CellLines')
-    #
-    # # using the fitted responses
-    # cellLineDict = createCellLineResponseDict(doseResponseFitted, (forestImputedDescriptors, 'NAME'),
-    #                                           (ECPF1024, 'DRUG'),(PFP1024, 'DRUG'), nFeatures=100, maxCL=100,
-    #                                           cellLinesList=cellLinesList)
-    #
-    # print(cellLineDict)
-    #
-    # writePythonObjectToFile(cellLineDict, 'cellLineDict_100cells_PFPonly_fitted')
-    #
-    # # using multiple measured doses
-    # cellLineDict = createCellLineResponseDict(doseResponseMulti, (forestImputedDescriptors, 'NAME'),
-    #                                           (ECPF1024, 'DRUG'),(PFP1024, 'DRUG'), nFeatures=100, maxCL=100,
-    #                                           cellLinesList=cellLinesList)
-    #
-    # print(cellLineDict)
-    #
-    # writePythonObjectToFile(cellLineDict, 'cellLineDict_100cells_PFPonly_multiple')
-    #
+    dictT = loadPythonObjectFromFile('cellLineDict_100cells_PFPonly_multiple')
+
+    lineList = list(dictT.keys())
+    lineList = lineList[:80]
+
+    writePythonObjectToFile(lineList,'100CellLines')
+
+    cellLinesList = loadPythonObjectFromFile('100CellLines')
+
+    # using the fitted responses
+    cellLineDict = createCellLineResponseDict(doseResponseFitted, (forestImputedDescriptors, 'NAME'),
+                                              (ECPF1024, 'DRUG'),(PFP1024, 'DRUG'), nFeatures=100, maxCL=100,
+                                              cellLinesList=cellLinesList)
+
+    print(cellLineDict)
+
+    writePythonObjectToFile(cellLineDict, 'cellLineDict_100cells_PFPonly_fitted')
+
+    # using multiple measured doses
+    cellLineDict = createCellLineResponseDict(doseResponseMulti, (forestImputedDescriptors, 'NAME'),
+                                              (ECPF1024, 'DRUG'),(PFP1024, 'DRUG'), nFeatures=100, maxCL=100,
+                                              cellLinesList=cellLinesList)
+
+    print(cellLineDict)
+
+    writePythonObjectToFile(cellLineDict, 'cellLineDict_100cells_PFPonly_multiple')
+
     evaluateByCellLinePerformance(('cellLineDict_100cells_PFPonly_fitted', 'fitted drug response'),
                                   ('cellLineDict_100cells_PFPonly_multiple', 'multiple doses drug response'),
                                   metric='r2', saveName='PerformanceFitted80CellsR2')
